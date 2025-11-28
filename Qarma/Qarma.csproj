@@ -159,6 +159,8 @@
     <Compile Include="Controllers\InspectorController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\ProductController.cs" />
+    <Compile Include="Controllers\ProductPerformanceController.cs" />
+    <Compile Include="Controllers\SupplierPerformanceController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -225,6 +227,8 @@
     <Content Include="Views\Defect\Index.cshtml" />
     <Content Include="Views\Product\Index.cshtml" />
     <Content Include="Views\Inspector\Index.cshtml" />
+    <Content Include="Views\ProductPerformance\Index.cshtml" />
+    <Content Include="Views\SupplierPerformance\Index.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
