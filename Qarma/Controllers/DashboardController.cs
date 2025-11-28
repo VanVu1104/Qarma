@@ -62,7 +62,7 @@ namespace Qarma.Controllers
 
 			return View(mockData);
 		}
-	}
+	
         public ActionResult Index(string fromDate, string toDate)
         {
             // 1. Dữ liệu biểu đồ cột (Inspections)
