@@ -1,0 +1,187 @@
+﻿@model Qarma.ViewModels.DashboardViewModel
+
+@{
+    ViewBag.Title = "Inspection Overview";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Inspection Overview</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+</head>
+<body style="background-color: #f8f9fa;">
+
+    <div class="container-fluid p-4">
+        <h2 class="mb-4 fw-bold" style="color: #0f4c75;">Inspection overview</h2>
+
+        <div class="row">
+
+            <div class="col-lg-8">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-secondary text-white">Inspection Distribution</div>
+
+                    <div class="card-body p-0 d-flex flex-column">
+
+                        <div id="chart_inspections" class="flex-grow-1 w-100"></div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <form method="get" action="@Url.Action("Index", "Dashboard")" id="filterForm" class="d-flex gap-2 align-items-center">
+                        <input type="text" name="fromDate" value="@Model.FromDate" class="form-control form-control-sm text-center fw-bold" style="width: 100px; color: #555;" placeholder="dd/mm/yyyy">
+                        <span class="fw-bold">-</span>
+                        <input type="text" name="toDate" value="@Model.ToDate" class="form-control form-control-sm text-center fw-bold" style="width: 100px; color: #555;" placeholder="dd/mm/yyyy">
+                        <button type="submit" class="btn btn-sm btn-success">Lọc</button>
+                    </form>
+                    @*<h3 class="fw-bold m-0" style="color: #00b050; letter-spacing: -1px;">Qarma</h3>*@
+                </div>
+
+                <div class="position-relative mb-4 mt-3" style="height: 20px; padding: 0 10px;">
+                    <div class="position-absolute top-50 start-0 w-100 bg-secondary" style="height: 2px; opacity: 0.5;"></div>
+                    <div class="position-absolute top-50 bg-dark" style="height: 2px; width: 60%; left: 20%;"></div>
+                    <div class="position-absolute top-50 bg-white border border-2 border-dark rounded-circle" style="width: 16px; height: 16px; left: 20%; transform: translate(-50%, -50%); cursor: pointer;"></div>
+                    <div class="position-absolute top-50 bg-white border border-2 border-dark rounded-circle" style="width: 16px; height: 16px; left: 80%; transform: translate(-50%, -50%); cursor: pointer;"></div>
+                </div>
+
+                <div class="row row-cols-5 g-1 mb-3 text-center">
+                    <div class="col"><div class="border p-2 bg-white h-100 d-flex flex-column justify-content-center"><h4 class="fw-bold mb-0">@Model.Kpis.TotalInspections</h4><small class="text-muted" style="font-size: 11px;">Inspections</small></div></div>
+                    <div class="col"><div class="border p-2 bg-white h-100 d-flex flex-column justify-content-center"><h4 class="fw-bold mb-0">@Model.Kpis.ReInspections</h4><small class="text-muted" style="font-size: 11px;">Re-Inspections</small></div></div>
+                    <div class="col"><div class="border p-2 bg-white h-100 d-flex flex-column justify-content-center"><h4 class="fw-bold mb-0">@Model.Kpis.Orders</h4><small class="text-muted" style="font-size: 11px;">Orders</small></div></div>
+                    <div class="col"><div class="border p-2 bg-white h-100 d-flex flex-column justify-content-center"><h4 class="fw-bold mb-0">@Model.Kpis.Items</h4><small class="text-muted" style="font-size: 11px;">Items</small></div></div>
+                    <div class="col"><div class="border p-2 bg-white h-100 d-flex flex-column justify-content-center"><h4 class="fw-bold mb-0">@Model.Kpis.SampleQuantity.ToString("N0")</h4><small class="text-muted" style="font-size: 11px;">Sample quantity</small></div></div>
+                </div>
+
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header bg-secondary text-white fw-bold" style="background-color: #cfd8dc !important; color: #000 !important;">Defect Severity Distribution</div>
+                    <div class="card-body p-2"><div id="chart_defects" style="height: 200px;"></div></div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-header bg-secondary text-white fw-bold" style="background-color: #cfd8dc !important; color: #000 !important;">Conclusion Distribution - Inspection Type</div>
+                    <div class="card-body p-2"><div id="chart_conclusions" style="height: 250px;"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var rawDefects = @Html.Raw(Json.Encode(Model.DefectStats));
+        var rawConclusions = @Html.Raw(Json.Encode(Model.Conclusions));
+
+        google.charts.load('current', { 'packages': ['corechart', 'bar'] });
+        google.charts.setOnLoadCallback(drawSmallCharts);
+
+        function drawSmallCharts() {
+            // Đã xóa drawInspectionChart() ở đây để nhường chỗ cho ApexCharts
+            drawDefectChart();
+            drawConclusionChart();
+        }
+
+        function drawDefectChart() {
+            if (!rawDefects || rawDefects.length === 0) return;
+            var dataArray = [['Severity', 'Defects', { role: 'style' }]];
+            for (var i = 0; i < rawDefects.length; i++) {
+                dataArray.push([rawDefects[i].Severity, rawDefects[i].Count, rawDefects[i].Color]);
+            }
+            var data = google.visualization.arrayToDataTable(dataArray);
+            var options = { legend: { position: 'none' }, vAxis: { minValue: 0 } };
+            var chart = new google.visualization.ColumnChart(document.getElementById('chart_defects'));
+            chart.draw(data, options);
+        }
+
+        function drawConclusionChart() {
+            if (!rawConclusions || rawConclusions.length === 0) return;
+            var dataArray = [['Type', 'Approved', 'Pending', 'Rejected']];
+            for (var i = 0; i < rawConclusions.length; i++) {
+                dataArray.push([rawConclusions[i].Type, rawConclusions[i].Approved, rawConclusions[i].Pending, rawConclusions[i].Rejected]);
+            }
+            var data = google.visualization.arrayToDataTable(dataArray);
+            var options = { isStacked: true, colors: ['#2E8B57', '#FFD700', '#dc3545'], legend: { position: 'top', maxLines: 3 } };
+            var chart = new google.visualization.ColumnChart(document.getElementById('chart_conclusions'));
+            chart.draw(data, options);
+        }
+    </script>
+
+    <script>
+        var rawInspections = @Html.Raw(Json.Encode(Model.MonthlyInspections));
+
+        document.addEventListener("DOMContentLoaded", function () {
+            var dataValues = [];
+            var dataCategories = [];
+
+            if (rawInspections && rawInspections.length > 0) {
+                for (var i = 0; i < rawInspections.length; i++) {
+                    dataValues.push(rawInspections[i].Count);
+                    var parts = rawInspections[i].MonthYear.split('-');
+                    var month = parts[0];
+                    var year = "20" + parts[1];
+
+                    if (month === "Jan") {
+                        dataCategories.push([month, year]);
+                    } else {
+                        dataCategories.push(month);
+                    }
+                }
+            }
+
+            var options = {
+                series: [{ name: 'Inspections', data: dataValues }],
+                chart: {
+                    type: 'bar',
+                    height: '100%', 
+                    toolbar: { show: false },
+                    fontFamily: 'Helvetica, Arial, sans-serif',
+                    // --- THÊM DÒNG NÀY ---
+                    parentHeightOffset: 0, // Xóa khoảng trắng dự phòng dưới cùng của thư viện
+                },
+                plotOptions: {
+                    bar: {
+                        borderRadius: 0,
+                        columnWidth: '65%',
+                        dataLabels: { position: 'top' }
+                    }
+                },
+                dataLabels: { enabled: true, offsetY: -20, style: { fontSize: '12px', colors: ["#304758"] } },
+                colors: ['#2E8B57'],
+                xaxis: {
+                    categories: dataCategories,
+                    position: 'bottom',
+                    axisBorder: { show: false },
+                    axisTicks: { show: false },
+                    labels: {
+                        style: { fontSize: '12px', colors: '#555' },
+                        // Nếu cần nhãn sát hơn nữa, chỉnh offsetY (ví dụ: -5)
+                        offsetY: 0
+                    },
+                    tooltip: { enabled: false }
+                },
+                yaxis: {
+                    axisBorder: { show: false },
+                    axisTicks: { show: false },
+                    labels: { show: true, formatter: function (val) { return val.toFixed(0); } }
+                },
+                // --- SỬA PHẦN GRID ---
+                grid: {
+                    strokeDashArray: 4,
+                    padding: {
+                        bottom: 0,  // Kéo biểu đồ sát đáy
+                        left: 10,   // Căn lề trái một chút để không mất số trục Y
+                        right: 0
+                    }
+                }
+            };
+
+            var chart = new ApexCharts(document.querySelector("#chart_inspections"), options);
+            chart.render();
+        });
+    </script>
+</body>
+</html>
