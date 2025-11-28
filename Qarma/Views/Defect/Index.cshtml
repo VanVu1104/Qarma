@@ -1,0 +1,244 @@
+﻿@model Qarma.ViewModels.DefectOverviewViewModel
+
+@{
+    ViewBag.Title = "Defect Overview";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Defect Overview</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <style>
+        body {
+            background-color: #f4f6f8;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .card-header {
+            background-color: #cfd8dc !important;
+            color: #2c3e50 !important;
+            font-weight: bold;
+            border-bottom: 2px solid #b0bec5;
+        }
+
+        .main-title {
+            color: #1a5c85;
+            font-weight: 800;
+            font-size: 28px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container-fluid p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="main-title mb-0">Defect overview</h2>
+
+            <div class="d-flex gap-3 align-items-center">
+                <div class="d-flex gap-2">
+                    <input type="text" value="@Model.FromDate" class="form-control form-control-sm text-center fw-bold" style="width: 100px;">
+                    <input type="text" value="@Model.ToDate" class="form-control form-control-sm text-center fw-bold" style="width: 100px;">
+                </div>
+                @*<h3 class="fw-bold m-0" style="color: #00b050; letter-spacing: -1px;">Qarma</h3>*@
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-lg-7">
+                <div class="card shadow-sm h-100 chart-container">
+                    <div class="card-header">Defects Distribution</div>
+                    <div class="card-body p-2">
+                        <div class="d-flex gap-3 mb-2 small fw-bold">
+                            <span>Defect severity:</span>
+                            <span style="color:#ef5350">● Critical</span>
+                            <span style="color:#fdd835">● Major</span>
+                            <span style="color:#2980b9">● Minor</span>
+                        </div>
+                        <div id="chart_stacked"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card shadow-sm h-100 chart-container">
+                    <div class="card-header">Defect Category</div>
+                    <div class="card-body p-2 d-flex align-items-center justify-content-center">
+                        <div id="chart_pie" style="width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm chart-container">
+                    <div class="card-header">Defect Type Pareto</div>
+                    <div class="card-body p-2">
+                        <div id="chart_pareto"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. NHẬN DỮ LIỆU TỪ CONTROLLER
+        var rawTrends = @Html.Raw(Json.Encode(Model.DefectTrends));
+        var rawCategories = @Html.Raw(Json.Encode(Model.DefectCategories));
+        var rawPareto = @Html.Raw(Json.Encode(Model.ParetoData));
+
+        document.addEventListener("DOMContentLoaded", function () {
+            renderStackedChart();
+            renderPieChart();
+            renderParetoChart();
+        });
+
+        // --- CHART 1: STACKED BAR (Cột chồng) ---
+        function renderStackedChart() {
+            var categories = [];
+            var dataCritical = [], dataMajor = [], dataMinor = [];
+
+            // Xử lý dữ liệu (Tách tháng/năm như bài trước)
+            rawTrends.forEach(item => {
+                dataCritical.push(item.Critical);
+                dataMajor.push(item.Major);
+                dataMinor.push(item.Minor);
+
+                var parts = item.MonthYear.split('-');
+                if (parts[0] === "Jan") {
+                    categories.push([parts[0], "20" + parts[1]]); // Xuống dòng năm
+                } else {
+                    categories.push(parts[0]);
+                }
+            });
+
+            var options = {
+                series: [
+                    { name: 'Critical', data: dataCritical }, // Đỏ
+                    { name: 'Major', data: dataMajor },       // Vàng
+                    { name: 'Minor', data: dataMinor }        // Xanh
+                ],
+                chart: {
+                    type: 'bar', height: 350, stacked: true, // Kích hoạt chế độ chồng
+                    toolbar: { show: false }
+                },
+                colors: ['#ef5350', '#fdd835', '#2980b9'], // Mã màu y hệt ảnh
+                plotOptions: {
+                    bar: {
+                        columnWidth: '50%',
+                        dataLabels: { total: { enabled: false } } // Tắt số tổng trên đỉnh (nếu muốn giống ảnh chỉ hiện số trong cột)
+                    }
+                },
+                dataLabels: {
+                    enabled: true,
+                    style: { fontSize: '10px', colors: ['#333'] } // Chữ màu đen cho dễ đọc trên nền vàng
+                },
+                legend: { show: false }, // Đã tự vẽ legend HTML bên trên cho đẹp
+                xaxis: {
+                    categories: categories,
+                    labels: { style: { fontSize: '11px' } },
+                    axisBorder: { show: false }, axisTicks: { show: false }
+                },
+                grid: { strokeDashArray: 4 }
+            };
+            new ApexCharts(document.querySelector("#chart_stacked"), options).render();
+        }
+
+        // --- CHART 2: PIE CHART (Tròn) ---
+        function renderPieChart() {
+            var labels = rawCategories.map(x => x.Name);
+            var series = rawCategories.map(x => x.Count);
+
+            var options = {
+                series: series,
+                labels: labels,
+                chart: { type: 'pie', height: 300 },
+                colors: ['#d7ccc8', '#558b2f', '#43a047', '#2e7d32', '#1b5e20'], // Tông màu đất/xanh rêu
+                dataLabels: {
+                    enabled: true,
+                    formatter: function (val, opts) {
+                        // Hiển thị dạng: "Tên: Số lượng (Tỷ lệ%)"
+                        var name = opts.w.globals.labels[opts.seriesIndex];
+                        var value = opts.w.config.series[opts.seriesIndex];
+                        return [name, value + " (" + val.toFixed(1) + "%)"];
+                    },
+                    style: { fontSize: '11px', colors: ['#333'] },
+                    background: { enabled: true, foreColor: '#fff', padding: 4, borderRadius: 2 }
+                },
+                legend: { show: false }, // Ẩn legend, dùng label trực tiếp
+                plotOptions: {
+                    pie: {
+                        dataLabels: { offset: -20, minAngleToShowLabel: 10 }
+                    }
+                }
+            };
+            new ApexCharts(document.querySelector("#chart_pie"), options).render();
+        }
+
+        // --- CHART 3: PARETO (Combo: Cột + Line) ---
+        function renderParetoChart() {
+            var labels = rawPareto.map(x => x.DefectName);
+            var counts = rawPareto.map(x => x.Count);
+            var percentages = rawPareto.map(x => x.CumulativePercentage);
+
+            var options = {
+                series: [
+                    { name: 'Sum defects', type: 'column', data: counts },
+                    { name: 'Pareto %', type: 'line', data: percentages }
+                ],
+                chart: { type: 'line', height: 350, toolbar: { show: false } },
+                stroke: { width: [0, 2], curve: 'smooth' }, // Cột không viền, Line viền 2px
+                colors: ['#1E7145', '#555555'], // Cột xanh, Line xám đậm
+
+                plotOptions: {
+                    bar: { columnWidth: '70%', borderRadius: 0 }
+                },
+
+                dataLabels: {
+                    enabled: true,
+                    enabledOnSeries: [0, 1], // Bật số cho cả 2
+                    formatter: function(val, opts) {
+                        if (opts.seriesIndex === 1) return val + "%"; // Thêm % cho dòng Line
+                        return val;
+                    },
+                    style: { fontSize: '10px', colors: ['#333'] },
+                    offsetY: -5
+                },
+
+                xaxis: {
+                    categories: labels,
+                    labels: { rotate: -45, style: { fontSize: '10px' }, trim: true, maxHeight: 100 }
+                },
+
+                // Cấu hình 2 trục Y (Trái: Số lượng, Phải: Phần trăm)
+                yaxis: [
+                    {
+                        seriesName: 'Sum defects',
+                        title: { text: 'Sum defects', style: { fontSize: '11px' } },
+                    },
+                    {
+                        opposite: true, // Trục nằm bên phải
+                        seriesName: 'Pareto %',
+                        title: { text: 'Pareto %', style: { fontSize: '11px' } },
+                        max: 100, // Max luôn là 100%
+                        min: 0
+                    }
+                ],
+                legend: { show: false },
+                grid: { strokeDashArray: 4 }
+            };
+            new ApexCharts(document.querySelector("#chart_pareto"), options).render();
+        }
+    </script>
+</body>
+</html>
