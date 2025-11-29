@@ -1,0 +1,517 @@
+﻿@{
+    ViewBag.Title = "Supplier Performance";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+<style>
+    text {
+        font-family: 'Inter', sans-serif !important;
+    }
+
+    /* Animation Gauge */
+    .gauge-fill {
+        transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+        transform-origin: center;
+        clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%);
+    }
+
+    /* Leaflet Popup */
+    .leaflet-popup-content-wrapper {
+        border-radius: 8px;
+        font-family: 'Inter', sans-serif;
+        font-size: 12px;
+    }
+
+    .leaflet-popup-tip {
+        background: white;
+    }
+
+    /* Pie Chart Overlay */
+    .relative-container {
+        position: relative;
+    }
+
+    .hidden {
+        display: none;
+    }
+</style>
+
+<div class="space-y-6 pb-10 font-sans text-gray-700">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-2">
+        <div>
+            <h1 class="text-3xl font-extrabold text-[#1a5c85]">Supplier performance</h1>
+            <div class="flex items-center mt-3 text-gray-800">
+                <button class="mr-3 text-gray-500 hover:text-gray-700 transition">
+                    <i class="fa-solid fa-circle-arrow-left text-3xl"></i>
+                </button>
+                <span id="product-name" class="text-2xl font-semibold">Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 px-4 md:px-12 pt-4">
+
+        <div class="flex flex-col items-center relative">
+            <span class="text-[0.85rem] text-gray-600 font-bold mb-[2px] text-center">Rejection rate</span>
+            <span id="kpi-rej-target" class="text-xs text-gray-400 font-medium mb-2">-- %</span>
+            <div class="w-[160px] h-[80px] overflow-hidden relative group">
+                <div class="w-[160px] h-[160px] border-[16px] border-gray-200 rounded-full absolute top-0 left-0 box-border"></div>
+                <div id="kpi-rej-fill" class="gauge-fill w-[160px] h-[160px] border-[16px] border-gray-300 rounded-full absolute top-0 left-0 box-border" style="transform: rotate(-180deg);"></div>
+            </div>
+            <span id="kpi-rej-val" class="absolute bottom-[0px] w-full text-center text-[1.35rem] font-bold text-gray-400">--</span>
+        </div>
+
+        <div class="flex flex-col items-center relative">
+            <span class="text-[0.85rem] text-gray-600 font-bold mb-[2px] text-center">Re-inspection rate</span>
+            <span id="kpi-reins-target" class="text-xs text-gray-400 font-medium mb-2">-- %</span>
+            <div class="w-[160px] h-[80px] overflow-hidden relative">
+                <div class="w-[160px] h-[160px] border-[16px] border-gray-200 rounded-full absolute top-0 left-0 box-border"></div>
+                <div id="kpi-reins-fill" class="gauge-fill w-[160px] h-[160px] border-[16px] border-gray-300 rounded-full absolute top-0 left-0 box-border" style="transform: rotate(-180deg);"></div>
+            </div>
+            <span id="kpi-reins-val" class="absolute bottom-[0px] w-full text-center text-[1.35rem] font-bold text-gray-400">--</span>
+        </div>
+
+        <div class="flex flex-col items-center relative">
+            <span class="text-[0.85rem] text-gray-600 font-bold mb-[2px] text-center">Defect rate</span>
+            <span id="kpi-def-target" class="text-xs text-gray-400 font-medium mb-2">-- %</span>
+            <div class="w-[160px] h-[80px] overflow-hidden relative">
+                <div class="w-[160px] h-[160px] border-[16px] border-gray-200 rounded-full absolute top-0 left-0 box-border"></div>
+                <div id="kpi-def-fill" class="gauge-fill w-[160px] h-[160px] border-[16px] border-[#dc2626] rounded-full absolute top-0 left-0 box-border" style="transform: rotate(-180deg);"></div>
+            </div>
+            <span id="kpi-def-val" class="absolute bottom-[0px] w-full text-center text-[1.35rem] font-bold text-[#dc2626]">--</span>
+        </div>
+
+        <div class="flex flex-col items-center relative">
+            <span class="text-[0.85rem] text-gray-600 font-bold mb-[2px] text-center">Measurement rate</span>
+            <span id="kpi-meas-target" class="text-xs text-gray-400 font-medium mb-2">-- %</span>
+            <div class="w-[160px] h-[80px] overflow-hidden relative">
+                <div class="w-[160px] h-[160px] border-[16px] border-gray-200 rounded-full absolute top-0 left-0 box-border"></div>
+                <div id="kpi-meas-fill" class="gauge-fill w-[160px] h-[160px] border-[16px] border-gray-300 rounded-full absolute top-0 left-0 box-border" style="transform: rotate(-180deg);"></div>
+            </div>
+            <span id="kpi-meas-val" class="absolute bottom-[0px] w-full text-center text-[1.35rem] font-bold text-gray-400">--</span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 h-auto lg:h-[400px] mt-8">
+
+        <div class="lg:col-span-8 border border-gray-400 bg-white shadow-sm flex flex-col">
+            <div class="bg-gray-300 px-3 py-2 font-bold text-[0.85rem] text-gray-800 border-b border-gray-400 flex justify-between">
+                <span id="chart-dist-title">Inspection Distribution</span>
+            </div>
+            <div class="flex-grow p-4 relative">
+                <div id="chart_distribution" class="w-full h-full" style="min-height: 280px;"></div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-4 border border-gray-400 bg-white shadow-sm flex flex-col relative overflow-hidden">
+            <div class="bg-gray-300 px-3 py-2 font-bold text-[0.85rem] text-gray-800 border-b border-gray-400 flex justify-between items-center z-20 relative">
+                <span id="map-title">Inspection Map - Loading...</span>
+            </div>
+            <div class="flex-grow relative bg-[#c8dce0]">
+                <div id="chart_map" class="w-full h-full z-0" style="min-height: 300px;"></div>
+                <div class="absolute bottom-0 right-0 px-1 bg-white/70 text-[10px] text-gray-500 z-10 pointer-events-none">
+                    <span>© OpenStreetMap</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 h-auto lg:h-[320px]">
+
+        <div class="lg:col-span-1 border border-gray-400 bg-white shadow-sm flex flex-col">
+            <div class="bg-gray-300 px-3 py-2 font-bold text-[0.85rem] text-gray-800 border-b border-gray-400">
+                Defect Severity Distribution
+            </div>
+            <div class="flex-grow p-1">
+                <div id="chart_severity" class="w-full h-full"></div>
+            </div>
+        </div>
+
+        @*Defects Category*@
+        <div class="lg:col-span-1 border border-gray-400 bg-white shadow-sm flex flex-col">
+            <div class="bg-gray-300 px-3 py-2 font-bold text-[0.85rem] text-gray-800 border-b border-gray-400">
+                Defects Category
+            </div>
+            <div class="flex-grow p-1 relative-container">
+                <div id="chart_category" class="w-full h-full"></div>
+            </div>
+        </div>
+
+        @*Defect Type Pareto*@
+        <div class="lg:col-span-2 border border-gray-400 bg-white shadow-sm flex flex-col">
+            <div class="bg-gray-300 px-3 py-2 font-bold text-[0.85rem] text-gray-800 border-b border-gray-400">
+                Defect Type Pareto
+            </div>
+            <div class="flex-grow p-1 relative">
+                <div id="chart_pareto" class="w-full h-full"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script type="text/javascript">
+        // --- DỮ LIỆU MẪU CHO SUPPLIER (KHỚP VỚI HÌNH ẢNH) ---
+        const apiData = {
+            productInfo: {
+                name: "Supplier 7",
+                totalInspections: 10,
+                locationRate: "90.00%"
+            },
+            kpis: {
+                rejection: { target: 16.1, current: 0.0 },
+                reinspection: { target: 2.3, current: 0.0 },
+                defect: { target: 1.4, current: 2.6 }, // Màu đỏ
+                measurement: { target: 3.8, current: 0.0 }
+            },
+            // Dữ liệu biểu đồ Distribution (Jun 2023 -> Aug 2024)
+            distribution: [
+                { month: "Jun\n2\n2023", count: 1, rate: 0.1625 },
+                { month: "Sep\n3\n2023", count: 1, rate: 0.0625 },
+                { month: "Apr\n2024", count: 1, rate: 0.00 },
+                { month: "May\n2\n2024", count: 2, rate: 0.002 },
+                { month: "Jun\n2024", count: 3, rate: 0.0734 },
+                { month: "Jul\n2024", count: 1, rate: 0.008 },
+                { month: "Aug\n3\n2024", count: 1, rate: 0.10 }
+            ],
+            // Map: World View (Mỹ, Châu Âu, Á)
+            mapLocations: [
+                { lat: 37.0902, long: -95.7129, name: "North America", value: 1 }, // Mỹ
+                { lat: 48.8566, long: 2.3522, name: "Europe (France)", value: 1 }, // Pháp
+                { lat: 51.1657, long: 10.4515, name: "Europe (Germany)", value: 2 }, // Đức
+                { lat: 21.0285, long: 105.8542, name: "Asia (Vietnam)", value: 3 }   // VN
+            ],
+            // Severity: Major Yellow, Minor Blue
+            severity: [
+                { type: "Major", count: 28, color: "#fccb00" }, // Vàng
+                { type: "Minor", count: 12, color: "#3182bd" }, // Xanh dương
+                { type: "Critical", count: 0, color: "#d32f2f" }
+            ],
+            // Pie Categories
+            categories: [
+                { name: "Fabric", count: 15, color: "#1f7a4d" },       // Xanh đậm
+                { name: "Sewing", count: 6, color: "#4ade80" },        // Xanh lá sáng
+                { name: "Finishing", count: 6, color: "#86efac" },     // Xanh nhạt
+                { name: "Accessories", count: 4, color: "#166534" },   // Xanh rất đậm
+                { name: "Packing", count: 23, color: "#e5e7eb" }       // Xám/Be
+            ],
+            // Pareto
+            pareto: [
+                { type: "Carton defects", count: 13, percent: 0.325, isLast: false },
+                { type: "Missing/check", count: 9, percent: 0.55, isLast: false },
+                { type: "Stripes/check", count: 6, percent: 0.70, isLast: false },
+                { type: "Thread trim", count: 4, percent: 0.80, isLast: false },
+                { type: "Pick Missing", count: 4, percent: 0.90, isLast: false },
+                { type: "Wrong polybag", count: 1, percent: 0.925, isLast: false },
+                { type: "Snag Yarn", count: 1, percent: 0.95, isLast: false },
+                { type: "Hole", count: 1, percent: 0.975, isLast: false },
+                { type: "Buckle", count: 1, percent: 1.00, isLast: true }
+            ]
+        };
+
+        google.charts.load('current', { 'packages': ['corechart', 'bar', 'geochart'] });
+        google.charts.setOnLoadCallback(initDashboard);
+
+        function initDashboard() {
+            renderKpis();
+            drawDistribution();
+            drawLeafletMap();
+            drawSeverity();
+            drawCategory();
+            drawPareto();
+        }
+
+        // --- MAP: LEAFLET (WORLD VIEW) ---
+        function drawLeafletMap() {
+            if (typeof L === 'undefined') { return; }
+            var container = L.DomUtil.get('chart_map');
+            if (container != null) { container._leaflet_id = null; }
+
+            // Zoom out để thấy toàn thế giới (SetView: [20, 0], Zoom: 2)
+            var map = L.map('chart_map').setView([20, 0], 1);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map);
+
+            // Marker màu xanh lá
+            var greenIcon = new L.Icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+            });
+
+            apiData.mapLocations.forEach(loc => {
+                var marker = L.marker([loc.lat, loc.long], { icon: greenIcon }).addTo(map);
+                marker.bindPopup(`<div style="text-align:center; color:#1f7a4d;"><b>${loc.name}</b><br>Rate: 90%</div>`);
+            });
+            setTimeout(() => { map.invalidateSize(); }, 200);
+        }
+
+        // --- KPI RENDER ---
+        function renderKpis() {
+            document.getElementById('product-name').innerText = apiData.productInfo.name;
+            let totalCount = apiData.productInfo.totalInspections;
+            document.getElementById('chart-dist-title').innerText = `Inspection Distribution - Total Inspections ${totalCount}`;
+            document.getElementById('map-title').innerText = `Inspection Map - Location rate ${apiData.productInfo.locationRate}`;
+
+            const kpi = apiData.kpis;
+            const updateGauge = (targetId, fillId, valId, dataObj) => {
+                document.getElementById(targetId).innerText = `${dataObj.target} %`;
+                if (dataObj.current === null) {
+                    document.getElementById(valId).innerText = "(Blank)";
+                } else {
+                    document.getElementById(valId).innerText = `${dataObj.current.toFixed(1)} %`;
+                    let percent = dataObj.current > 100 ? 100 : dataObj.current;
+                    setTimeout(() => { document.getElementById(fillId).style.transform = `rotate(${-180 + (percent * 1.8)}deg)`; }, 100);
+                }
+            };
+            updateGauge('kpi-rej-target', 'kpi-rej-fill', 'kpi-rej-val', kpi.rejection);
+            updateGauge('kpi-reins-target', 'kpi-reins-fill', 'kpi-reins-val', kpi.reinspection);
+            updateGauge('kpi-def-target', 'kpi-def-fill', 'kpi-def-val', kpi.defect);
+            updateGauge('kpi-meas-target', 'kpi-meas-fill', 'kpi-meas-val', kpi.measurement);
+        }
+
+        // --- DISTRIBUTION ---
+        function drawDistribution() {
+            var dataArray = [['Month', 'Inspections', 'Defect rate', { role: 'annotation' }]];
+            apiData.distribution.forEach(item => {
+                let anno = (item.rate !== null) ? '   ' + (item.rate * 100).toFixed(2) + ' %   ' : null;
+                dataArray.push([item.month, item.count, item.rate, anno]);
+            });
+            var data = google.visualization.arrayToDataTable(dataArray);
+            var options = {
+                seriesType: 'bars',
+                series: {
+                    0: { color: '#1f7a4d' },
+                    1: { type: 'line', targetAxisIndex: 1, color: '#374151', pointSize: 5, lineWidth: 1 }
+                },
+                vAxes: {
+                    0: { title: 'Inspections', textStyle: { color: '#666', fontSize: 10 }, gridlines: { color: '#f3f4f6', count: 5 } },
+                    1: { title: 'Defect rate', textStyle: { color: '#666', fontSize: 10 }, format: '#.##%', gridlines: { color: 'transparent' } }
+                },
+                hAxis: {
+                    title: 'Month', textStyle: { color: '#666', fontSize: 10 }, gridlines: { color: 'transparent' }
+                },
+                legend: { position: 'top', alignment: 'start', textStyle: { fontSize: 11 } },
+                annotations: { stem: { color: 'transparent' }, textStyle: { color: '#333', fontSize: 10 }, boxStyle: { stroke: '#ccc', rx: 5, ry: 5, fill: '#f9fafb' } },
+                bar: { groupWidth: "60%" },
+                chartArea: { left: 40, right: 40, top: 40, bottom: 60, width: '100%', height: '100%' },
+                backgroundColor: 'transparent'
+            };
+            new google.visualization.ComboChart(document.getElementById('chart_distribution')).draw(data, options);
+        }
+
+        // --- SEVERITY (Yellow & Blue) ---
+        function drawSeverity() {
+            var dataArray = [['Severity', 'Count', { role: 'style' }, { role: 'annotation' }]];
+            let maxVal = 0;
+            apiData.severity.forEach(item => {
+                if (item.count > maxVal) maxVal = item.count;
+                dataArray.push([item.type, item.count, `color: ${item.color}; stroke-width: 0;`, item.count.toString()]);
+            });
+            if (maxVal === 0) maxVal = 5;
+            var data = google.visualization.arrayToDataTable(dataArray);
+            var view = new google.visualization.DataView(data);
+            view.setColumns([0, 1, 2, 3, { type: 'string', role: 'annotationTextStyle', calc: function (dt, row) { return (dt.getValue(row, 1) === 0) ? 'color: #6b7280; font-weight: bold;' : 'color: #ffffff; font-weight: bold;'; } }]);
+
+            var options = {
+                bars: 'horizontal', legend: 'none', backgroundColor: 'transparent',
+                chartArea: { left: 85, top: 15, right: 15, bottom: 45, height: '100%', width: '100%' },
+                hAxis: { title: 'Defects sum', textStyle: { color: '#666', fontSize: 11 }, gridlines: { color: '#d1d5db', style: 'dotted' }, ticks: [0, 20, 40], viewWindow: { max: maxVal * 1.15 } },
+                vAxis: { title: 'Defect severity', textStyle: { color: '#666', fontSize: 11 }, gridlines: { color: 'transparent' } },
+                bar: { groupWidth: "70%" },
+                annotations: { alwaysOutside: false, textStyle: { fontSize: 11 } }
+            };
+            new google.visualization.BarChart(document.getElementById('chart_severity')).draw(view, options);
+        }
+
+        // --- CATEGORY (Multi Colors) ---
+        function drawCategory() {
+            // 1. CHUẨN BỊ DỮ LIỆU
+            var dataArray = [['Category', 'Count']];
+            let totalCount = 0;
+            apiData.categories.forEach(item => totalCount += item.count);
+
+            // Sắp xếp giảm dần để các miếng lớn nằm trên, miếng nhỏ nằm dưới (giống hình mẫu)
+            apiData.categories.sort((a, b) => b.count - a.count);
+
+            let colorsArray = [];
+            apiData.categories.forEach(item => {
+                // Dữ liệu chuẩn: Cột 0 là Tên (cho Legend), Cột 1 là Giá trị (để tính toán và vẽ)
+                dataArray.push([item.name, item.count]);
+                colorsArray.push(item.color);
+            });
+
+            var data = google.visualization.arrayToDataTable(dataArray);
+
+            // 2. CẤU HÌNH OPTIONS ĐỂ GIỐNG HÌNH MẪU
+            var options = {
+                pieHole: 0, // Biểu đồ tròn đặc (Pie Chart)
+                colors: colorsArray, // Mảng màu đã sắp xếp tương ứng với dữ liệu
+
+                // Cấu hình Legend (Chú giải) nằm bên phải
+                legend: {
+                    position: 'right',
+                    alignment: 'center', // Canh giữa theo chiều dọc
+                    textStyle: {
+                        fontSize: 11,
+                        color: '#555', // Màu chữ xám trung bình
+                        fontName: 'Inter'
+                    },
+                    title: 'Defect Category', // Tiêu đề cho Legend
+                    titleTextStyle: {
+                        fontSize: 12,
+                        color: '#333', // Màu tiêu đề đậm hơn
+                        bold: true,
+                        fontName: 'Inter'
+                    }
+                },
+
+                // Cấu hình Text hiển thị trên các miếng bánh
+                // 'percentage' sẽ hiển thị số phần trăm. Google Charts sẽ tự động đẩy
+                // nhãn ra ngoài và tạo đường dẫn (leader line) cho các miếng bánh nhỏ.
+                pieSliceText: 'percentage',
+
+                // Style cho text trên miếng bánh
+                pieSliceTextStyle: {
+                    color: '#ffffff', // Chữ màu trắng để nổi bật trên nền màu
+                    fontSize: 11,
+                    fontName: 'Inter'
+                },
+
+                // Tinh chỉnh vùng vẽ (Chart Area) - QUAN TRỌNG
+                // Cần chừa đủ không gian bên phải cho Legend và xung quanh cho các nhãn bên ngoài.
+                chartArea: {
+                    left: 20,    // Khoảng cách từ mép trái container (padding)
+                    top: 20,     // Khoảng cách từ mép trên (padding)
+                    width: '85%', // Chiều rộng vùng vẽ (nhường khoảng 35% cho Legend bên phải)
+                    height: '85%' // Chiều cao vùng vẽ (nhường chỗ cho padding trên/dưới)
+                },
+
+                backgroundColor: 'transparent',
+
+                // Cấu hình Tooltip khi di chuột vào
+                tooltip: {
+                    textStyle: { fontSize: 11, fontName: 'Inter' },
+                    showColorCode: true, // Hiển thị chấm màu trong tooltip
+                    isHtml: true // Sử dụng HTML tooltip cho đẹp mắt
+                }
+            };
+
+            // 3. VẼ BIỂU ĐỒ
+            // Sử dụng PieChart chuẩn của Google, không cần overlay thủ công
+            new google.visualization.PieChart(document.getElementById('chart_category')).draw(data, options);
+        }
+
+        // --- PARETO (Many Columns) ---
+        function drawPareto() {
+            var dataArray = [[
+                'Type',
+                'Sum',
+                {
+                    role: 'annotation'
+                },
+                {
+                    role: 'style'
+                },
+                'Pareto %',
+                {
+                    role: 'annotation'
+                }
+            ]];
+            const mainColor = '#1f7a4d';
+            const lastColor = '#e5e7eb'; // Cột cuối màu xám nhạt
+
+            apiData.pareto.forEach(item => {
+                let color = `color: ${item.isLast ? lastColor : mainColor}; stroke-width: 0;`;
+                let percentAnnotation = (item.percent * 100).toFixed(1) + ' %';
+                dataArray.push([
+                    item.type,
+                    item.count,
+                    item.count.toString(),
+                    color,
+                    item.percent,
+                    percentAnnotation]);
+            });
+
+            var data = google.visualization.arrayToDataTable(dataArray);
+            var options = {
+                seriesType: 'bars', backgroundColor: 'transparent',
+                series: {
+                    0: { color: '#1f7a4d' },
+                    1: {
+                        type: 'line',
+                        targetAxisIndex: 1,
+                        color: '#374151',
+                        pointSize: 0,
+                        lineWidth: 2,
+                        annotations: {
+                            stem: {
+                                length: 10,
+                                color: 'transparent'
+                            }
+                        }
+                    }
+                },
+                vAxes: {
+                    0: {
+                        title: 'Sum defects',
+                        textStyle: { fontSize: 10, color: '#666' },
+                        gridlines: {
+                            color: '#d1d5db',
+                            style: 'dotted',
+                            count: 3
+                        },
+                        ticks: [0, 10, 20]
+                    },
+                    1: {
+                        title: 'Pareto %',
+                        textStyle: { fontSize: 10, color: '#666' },
+                        format: '#.0 %',
+                        gridlines: {
+                            color: '#d1d5db',
+                            style: 'dotted',
+                            count: 3
+                        },
+                        ticks: [0, 0.5, 1],
+                        baselineColor: 'transparent'
+                    }
+                },
+                hAxis: {
+                    title: 'Defect type',
+                    textStyle: { fontSize: 9, color: '#666' }, // Font nhỏ vì tên dài
+                    gridlines: { color: 'transparent' },
+                    baselineColor: '#d1d5db'
+                },
+                legend: { position: 'top', alignment: 'start', textStyle: { fontSize: 11 } },
+                annotations: {
+                    textStyle: { fontSize: 9, color: '#333', bold: true },
+                    boxStyle: {
+                        stroke: '#ccc',
+                        strokeWidth: 1,
+                        rx: 3,
+                        ry: 3,
+                        fill: 'rgba(255,255,255,0.8)'
+                    }
+                },
+                bar: { groupWidth: "70%" },
+                chartArea: {
+                    left: 40, right: 55,
+                    top: 30, bottom: 60,
+                    width: '95%', height: '100%'
+                }
+            };
+            new google.visualization.ComboChart(document.getElementById('chart_pareto')).draw(data, options);
+        }
+
+        window.addEventListener('resize', initDashboard);
+    </script>
+}
