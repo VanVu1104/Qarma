@@ -1,4 +1,8 @@
-﻿@{
+﻿@using Newtonsoft.Json
+@using Newtonsoft.Json.Serialization
+@model Qarma.Models.DashboardViewModel
+
+@{
     ViewBag.Title = "Product Performance";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
@@ -176,46 +180,40 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-    <script type="text/javascript">
-        // --- MOCK DATA ---
-        const apiData = {
-            productInfo: { name: "#123179-Coat - Blue - Fleece", totalInspections: 0, locationRate: "66.67%" },
-            kpis: {
-                rejection: { target: 16.1, current: 0.0 },
-                reinspection: { target: 2.3, current: 0.0 },
-                defect: { target: 1.4, current: 0.1 },
-                measurement: { target: 3.8, current: null }
-            },
-            distribution: [
-                // Để hiển thị 0.07% trên trục Y, giá trị thực tế phải là 0.0007
-                { month: "", count: 0, rate: null },
-                { month: "Apr\n2\n2024", count: 3, rate: 0.0007 },
-                { month: "", count: 0, rate: null }
-            ],
-            mapLocations: [
-                { lat: 16.0471, long: 108.2068, name: "Da Nang Factory", value: 2 },
-                { lat: 15.1205, long: 108.7923, name: "Quang Ngai Factory", value: 1 }
-            ],
-            severity: [
-                { type: "Minor", count: 6, color: "#3182bd" },
-                { type: "Major", count: 2, color: "#fccb00" },
-                { type: "Critical", count: 0, color: "#d32f2f" }
-            ],
-            categories: [
-                { name: "Fabric", count: 8, color: "#3e4b47" }, // Màu xanh rêu đậm
-            ],
-            pareto: [
-                { type: "Yarn Contamination", count: 2, percent: 0.25, isLast: false },
-                { type: "Thick Yarn", count: 2, percent: 0.50, isLast: false },
-                { type: "Hole", count: 2, percent: 0.75, isLast: false },
-                { type: "Fabric Crease Fold", count: 2, percent: 1.00, isLast: true }
-            ]
-        };
+    <script type="text/javascript">// --- NHẬN DỮ LIỆU TỪ CONTROLLER ---
+        // Html.Raw giúp in chuỗi JSON trực tiếp vào code JS mà không bị mã hóa HTML
+        let apiData = null;
 
         google.charts.load('current', { 'packages': ['corechart', 'bar', 'geochart'] });
-        google.charts.setOnLoadCallback(initDashboard);
+        google.charts.setOnLoadCallback(fetchDataAndInit);
+
+        function fetchDataAndInit() {
+            // Hiển thị loading (nếu cần)
+            document.getElementById('product-name').innerText = "Fetching data...";
+
+            // Gọi về Action GetDashboardData trong Controller
+            fetch('/ProductPerformance/GetDashboardData')
+                .then(response => {
+                    if (!response.ok) throw new Error("Network response was not ok");
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Data loaded via AJAX:", data);
+                    apiData = data; // Gán dữ liệu vào biến
+                    initDashboard(); // Vẽ biểu đồ
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    document.getElementById('product-name').innerText = "Error loading data";
+                });
+        }
 
         function initDashboard() {
+            // Kiểm tra nếu dữ liệu rỗng thì không chạy tiếp để tránh lỗi
+            if (!apiData) {
+                return;
+            }
+
             renderKpis();
             drawDistribution();
             drawLeafletMap();
@@ -262,11 +260,11 @@
 
                 // Custom Popup nội dung
                 var popupContent = `
-            <div style="text-align: center;">
-                <b style="color: #1f7a4d; font-size: 14px;">${loc.name}</b><br/>
-                <span style="color: #666;">Inspections: <b>${loc.value}</b></span>
-            </div>
-        `;
+                    <div style="text-align: center;">
+                        <b style="color: #1f7a4d; font-size: 14px;">${loc.name}</b><br/>
+                        <span style="color: #666;">Inspections: <b>${loc.value}</b></span>
+                    </div>
+                `;
 
                 marker.bindPopup(popupContent);
 
@@ -675,6 +673,5 @@
             new google.visualization.ComboChart(document.getElementById('chart_pareto')).draw(data, options);
         }
 
-        window.addEventListener('resize', initDashboard);
-    </script>
+        window.addEventListener('resize', initDashboard);</script>
 }

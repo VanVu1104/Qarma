@@ -1,4 +1,8 @@
-﻿@{
+﻿@using Newtonsoft.Json
+@using Newtonsoft.Json.Serialization
+@model Qarma.Models.SupplierDashboardViewModel
+
+@{
     ViewBag.Title = "Supplier Performance";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
@@ -156,68 +160,37 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <script type="text/javascript">
-        // --- DỮ LIỆU MẪU CHO SUPPLIER (KHỚP VỚI HÌNH ẢNH) ---
-        const apiData = {
-            productInfo: {
-                name: "Supplier 7",
-                totalInspections: 10,
-                locationRate: "90.00%"
-            },
-            kpis: {
-                rejection: { target: 16.1, current: 0.0 },
-                reinspection: { target: 2.3, current: 0.0 },
-                defect: { target: 1.4, current: 2.6 }, // Màu đỏ
-                measurement: { target: 3.8, current: 0.0 }
-            },
-            // Dữ liệu biểu đồ Distribution (Jun 2023 -> Aug 2024)
-            distribution: [
-                { month: "Jun\n2\n2023", count: 1, rate: 0.1625 },
-                { month: "Sep\n3\n2023", count: 1, rate: 0.0625 },
-                { month: "Apr\n2024", count: 1, rate: 0.00 },
-                { month: "May\n2\n2024", count: 2, rate: 0.002 },
-                { month: "Jun\n2024", count: 3, rate: 0.0734 },
-                { month: "Jul\n2024", count: 1, rate: 0.008 },
-                { month: "Aug\n3\n2024", count: 1, rate: 0.10 }
-            ],
-            // Map: World View (Mỹ, Châu Âu, Á)
-            mapLocations: [
-                { lat: 37.0902, long: -95.7129, name: "North America", value: 1 }, // Mỹ
-                { lat: 48.8566, long: 2.3522, name: "Europe (France)", value: 1 }, // Pháp
-                { lat: 51.1657, long: 10.4515, name: "Europe (Germany)", value: 2 }, // Đức
-                { lat: 21.0285, long: 105.8542, name: "Asia (Vietnam)", value: 3 }   // VN
-            ],
-            // Severity: Major Yellow, Minor Blue
-            severity: [
-                { type: "Major", count: 28, color: "#fccb00" }, // Vàng
-                { type: "Minor", count: 12, color: "#3182bd" }, // Xanh dương
-                { type: "Critical", count: 0, color: "#d32f2f" }
-            ],
-            // Pie Categories
-            categories: [
-                { name: "Fabric", count: 15, color: "#1f7a4d" },       // Xanh đậm
-                { name: "Sewing & App...", count: 6, color: "#4ade80" },        // Xanh lá sáng
-                { name: "Finishing", count: 6, color: "#86efac" },     // Xanh nhạt
-                { name: "Accessories", count: 4, color: "#166534" },   // Xanh rất đậm
-                { name: "Packing & Pac...", count: 23, color: "#e5e7eb" }       // Xám/Be
-            ],
-            // Pareto
-            pareto: [
-                { type: "Carton defects", count: 13, percent: 0.325, isLast: false },
-                { type: "Missing/check", count: 9, percent: 0.55, isLast: false },
-                { type: "Stripes/check", count: 6, percent: 0.70, isLast: false },
-                { type: "Thread trim", count: 4, percent: 0.80, isLast: false },
-                { type: "Pick Missing", count: 4, percent: 0.90, isLast: false },
-                { type: "Wrong polybag", count: 1, percent: 0.925, isLast: false },
-                { type: "Snag Yarn", count: 1, percent: 0.95, isLast: false },
-                { type: "Hole", count: 1, percent: 0.975, isLast: false },
-                { type: "Buckle", count: 1, percent: 1.00, isLast: true }
-            ]
-        };
+        // Khai báo biến toàn cục để chứa dữ liệu sau khi tải xong
+        let apiData = null;
 
         google.charts.load('current', { 'packages': ['corechart', 'bar', 'geochart'] });
-        google.charts.setOnLoadCallback(initDashboard);
+        google.charts.setOnLoadCallback(fetchDataAndInit);
+
+        // --- HÀM MỚI: GỌI AJAX VỀ SERVER ---
+        function fetchDataAndInit() {
+            // Hiển thị loading (nếu cần)
+            document.getElementById('product-name').innerText = "Fetching data...";
+
+            // Gọi về Action GetDashboardData trong Controller
+            fetch('/SupplierPerformance/GetDashboardData')
+                .then(response => {
+                    if (!response.ok) throw new Error("Network response was not ok");
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Data loaded via AJAX:", data);
+                    apiData = data; // Gán dữ liệu vào biến
+                    initDashboard(); // Vẽ biểu đồ
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    document.getElementById('product-name').innerText = "Error loading data";
+                });
+        }
 
         function initDashboard() {
+            if (!apiData) return;
+
             renderKpis();
             drawDistribution();
             drawLeafletMap();
@@ -512,6 +485,5 @@
             new google.visualization.ComboChart(document.getElementById('chart_pareto')).draw(data, options);
         }
 
-        window.addEventListener('resize', initDashboard);
-    </script>
+        window.addEventListener('resize', initDashboard);</script>
 }
