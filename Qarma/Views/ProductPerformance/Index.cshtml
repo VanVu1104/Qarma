@@ -181,8 +181,8 @@
         const apiData = {
             productInfo: { name: "#123179-Coat - Blue - Fleece", totalInspections: 0, locationRate: "66.67%" },
             kpis: {
-                rejection: { target: 16.1, current: 20.0 },
-                reinspection: { target: 2.3, current: 35.0 },
+                rejection: { target: 16.1, current: 0.0 },
+                reinspection: { target: 2.3, current: 0.0 },
                 defect: { target: 1.4, current: 0.1 },
                 measurement: { target: 3.8, current: null }
             },
@@ -190,7 +190,6 @@
                 // Để hiển thị 0.07% trên trục Y, giá trị thực tế phải là 0.0007
                 { month: "", count: 0, rate: null },
                 { month: "Apr\n2\n2024", count: 3, rate: 0.0007 },
-                { month: "Apr\n10\n2024", count: 5, rate: 0.0009 },
                 { month: "", count: 0, rate: null }
             ],
             mapLocations: [
@@ -198,13 +197,12 @@
                 { lat: 15.1205, long: 108.7923, name: "Quang Ngai Factory", value: 1 }
             ],
             severity: [
-                { type: "Minor", count: 13, color: "#3182bd" },
-                { type: "Major", count: 8, color: "#fccb00" },
-                { type: "Critical", count: 1, color: "#d32f2f" }
+                { type: "Minor", count: 6, color: "#3182bd" },
+                { type: "Major", count: 2, color: "#fccb00" },
+                { type: "Critical", count: 0, color: "#d32f2f" }
             ],
             categories: [
                 { name: "Fabric", count: 8, color: "#3e4b47" }, // Màu xanh rêu đậm
-                { name: "Wool", count: 3, color: "#6b7280" }    // Màu xám (ví dụ)
             ],
             pareto: [
                 { type: "Yarn Contamination", count: 2, percent: 0.25, isLast: false },
