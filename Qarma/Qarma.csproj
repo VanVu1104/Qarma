@@ -160,13 +160,18 @@
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\ProductController.cs" />
     <Compile Include="Controllers\ProductPerformanceController.cs" />
+    <Compile Include="Controllers\SupplierController.cs" />
     <Compile Include="Controllers\SupplierPerformanceController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\ProductPerformanceModels.cs" />
     <Compile Include="Models\InspectorMetric.cs" />
     <Compile Include="Models\ProductMetric.cs" />
+    <Compile Include="Models\SupplierModels.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\ProductService.cs" />
+    <Compile Include="Services\SupplierService.cs" />
     <Compile Include="ViewModels\SupplierStatsViewModel.cs" />
     <Compile Include="ViewModels\DashboardViewModel.cs" />
     <Compile Include="ViewModels\DefectOverviewViewModel.cs" />
@@ -222,7 +227,7 @@
     <Content Include="Views\Home\About.cshtml" />
     <Content Include="Views\Home\Contact.cshtml" />
     <Content Include="Views\Home\Index.cshtml" />
-    <Content Include="Views\Dashboard\SupplierOverview.cshtml" />
+    <Content Include="Views\Supplier\Index.cshtml" />
     <Content Include="Views\Dashboard\Index.cshtml" />
     <Content Include="Views\Defect\Index.cshtml" />
     <Content Include="Views\Product\Index.cshtml" />
