@@ -67,11 +67,28 @@
         </div>
 
         <div class="flex flex-col gap-2">
-            <div class="flex flex-col items-start justify-end w-full pb-1">
-                <div class="bg-white border border-gray-300 rounded-md px-4 py-2 text-sm font-medium text-gray-700 shadow-sm flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors">
-                    <span>01/01/2023</span><span>-</span><span>Current</span>
-                </div>
-            </div>
+            <form method="get" action="@Url.Action("Index")" class="flex items-center gap-2 bg-white border border-gray-300 rounded-md px-2 py-1 shadow-sm">
+
+                <input type="date" name="start"
+                       value="@ViewBag.StartDate"
+                       class="text-sm text-gray-700 border-none focus:ring-0 outline-none cursor-pointer bg-transparent"
+                       required />
+
+                <span class="text-gray-400 font-bold">-</span>
+
+                <input type="date" name="end"
+                       value="@ViewBag.EndDate"
+                       class="text-sm text-gray-700 border-none focus:ring-0 outline-none cursor-pointer bg-transparent"
+                       required />
+
+                <button type="submit"
+                        class="ml-2 bg-[#198754] text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-[#14532d] transition-colors shadow-sm flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                    </svg>
+                    Filter
+                </button>
+            </form>
 
             <div class="bg-white p-2 rounded shadow border-t-4 border-[#198754]">
                 <h3 class="font-bold text-xs bg-gray-200 p-1 mb-1 text-gray-700">Supplier - Defects (Pareto)</h3>
@@ -91,16 +108,12 @@
             <table class="w-full text-left table-compact relative">
                 <thead class="bg-[#198754] text-white uppercase font-semibold sticky top-0 z-20 shadow-sm">
                     <tr>
-                        <th class="bg-[#198754] w-48">Supplier Name</th>
-                        <th class="text-center bg-[#198754]">Minor</th>
-                        <th class="text-center bg-[#198754]">Major</th>
-                        <th class="text-center bg-[#198754]">Critical</th>
-                        <th class="text-center bg-[#198754]">Total<br>Defects</th>
-                        <th class="text-center bg-[#198754]">Defect<br>Rate</th>
-                        <th class="text-right bg-[#198754]">Sample<br>Qty</th>
-                        <th class="text-right bg-[#198754]">Avail<br>Qty</th>
-                        <th class="text-center bg-[#198754]">Inspec.</th>
-                        <th class="text-center bg-[#198754]">Reject<br>Rate</th>
+                        <th class="w-1/4 pl-4 bg-[#198754] w-48">Supplier Name</th>
+                        <th class="text-center w-24 bg-[#198754]">Minor</th>
+                        <th class="text-center w-24 bg-[#198754]">Major</th>
+                        <th class="text-center w-24 bg-[#198754]">Critical</th>
+                        <th class="text-center w-24 bg-[#198754]">Total<br>Defects</th>
+                        <th class="text-center w-24 bg-[#198754]">Defect<br>Rate (%)</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-gray-50 text-gray-700">
@@ -119,19 +132,7 @@
                                 <div class="flex items-center justify-center space-x-1">
                                     @if (item.DefectRate > 5.0) // Ví dụ logic cảnh báo đỏ
                                     {<span class="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>}
-                                    <span>@item.DefectRate%</span>
-                                </div>
-                            </td>
-
-                            <td class="text-right">@item.SampleQuantity.ToString("N0")</td>
-                            <td class="text-right">@item.AvailableQuantity.ToString("N0")</td>
-                            <td class="text-center font-semibold">@item.Inspections</td>
-
-                            <td class="text-center">
-                                <div class="flex items-center justify-center space-x-1">
-                                    @if (item.RejectionRate > 0)
-                                    {<span class="h-2 w-2 rounded-full bg-red-500"></span>}
-                                    <span>@item.RejectionRate%</span>
+                                    <span>@item.DefectRate.ToString("0.00")</span>
                                 </div>
                             </td>
                         </tr>
@@ -145,13 +146,7 @@
                             <td class="text-center bg-[#198754]">@Model.Sum(x => x.Major)</td>
                             <td class="text-center bg-[#198754]">@Model.Sum(x => x.Critical)</td>
                             <td class="text-center bg-[#198754]">@Model.Sum(x => x.SumDefects)</td>
-
-                            <td class="text-center bg-[#198754]">-</td>
-
-                            <td class="text-right bg-[#198754]">@Model.Sum(x => x.SampleQuantity).ToString("N0")</td>
-                            <td class="text-right bg-[#198754]">@Model.Sum(x => x.AvailableQuantity).ToString("N0")</td>
-                            <td class="text-center bg-[#198754]">@Model.Sum(x => x.Inspections)</td>
-                            <td class="text-center bg-[#198754]">-</td>
+                            <td class="text-center bg-[#198754]"></td>
                         </tr>
                     }
                 </tbody>
@@ -165,77 +160,145 @@
     google.charts.setOnLoadCallback(drawCharts);
 
     function drawCharts() {
+        // Lấy dữ liệu từ C#
         var rawData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model));
 
-        // 1. Vẽ Pareto Chart cho Inspections
-        drawParetoChart(
-            rawData,
-            'inspection_chart',
-            'SupplierName',
-            'Inspections',
-            'Inspections'
-        );
+        // 1. Vẽ biểu đồ Trái: CHỈ CÓ CỘT XANH (TotalPassed)
+        drawInspectionChart(rawData);
 
-        // 2. Vẽ Pareto Chart cho Defects (Dùng SumDefects)
-        drawParetoChart(
-            rawData,
-            'defect_chart',
-            'SupplierName',
-            'SumDefects',
-            'Total Defects'
-        );
+        // 2. Vẽ biểu đồ Phải: PARETO LỖI (Cột + Line)
+        drawDefectPareto(rawData);
     }
 
-    // --- HÀM VẼ PARETO (Đã custom để hợp với giao diện này) ---
-    function drawParetoChart(data, elementId, nameKey, valueKey, yLabel) {
+    // --- HÀM 1: VẼ BIỂU ĐỒ INSPECTION (CHỈ CỘT MÀU XANH) ---
+    function drawInspectionChart(data) {
+        var elementId = 'inspection_chart';
         if (!data || data.length === 0) {
             document.getElementById(elementId).innerHTML = '<div class="flex items-center justify-center h-full text-gray-400">No Data</div>';
             return;
         }
 
-        // B1: Sắp xếp & Lọc
-        let sortedData = [...data].sort((a, b) => b[valueKey] - a[valueKey]);
-        // Lọc bỏ những ông = 0 để biểu đồ đỡ dài
-        sortedData = sortedData.filter(x => x[valueKey] > 0);
+        // [QUAN TRỌNG]: Đã sửa TotalPassed -> SumPassed để khớp với SQL
+        let chartData = data.map(item => {
+            // Ưu tiên lấy SumPassed (theo C# mới), dự phòng sumPassed (viết thường)
+            let val = item.SumPassed !== undefined ? item.SumPassed : (item.sumPassed || 0);
 
-        if (sortedData.length === 0) return;
+            return {
+                Name: item.SupplierName || item.supplierName || "Unknown",
+                Value: parseFloat(val) // Ép kiểu về số
+            };
+        });
 
-        // B2: Tính chiều rộng động (Logic từ code tham khảo của bạn)
-        // Mỗi cột khoảng 45px, nếu ít quá thì để 100%
-        var minChartWidth = sortedData.length > 8 ? (sortedData.length * 45) + 'px' : '100%';
-        document.getElementById(elementId).style.width = minChartWidth;
+        // Sắp xếp giảm dần theo số lượng Đạt
+        chartData.sort((a, b) => b.Value - a.Value);
 
-        // B3: Tính toán Cumulative %
-        let totalValue = sortedData.reduce((sum, item) => sum + item[valueKey], 0);
+        // Lọc lấy dòng có dữ liệu Đạt > 0
+        let sortedData = chartData.filter(x => x.Value > 0);
+
+        // Kiểm tra lại sau khi lọc
+        if (sortedData.length === 0) {
+            document.getElementById(elementId).innerHTML = '<div class="flex items-center justify-center h-full text-gray-400">Data is 0</div>';
+            return;
+        }
+
+        document.getElementById(elementId).style.width = '100%';
+
+        // Tạo Bảng Dữ Liệu
+        var dataTable = new google.visualization.DataTable();
+        dataTable.addColumn('string', 'Supplier');
+        dataTable.addColumn('number', 'Passed');
+        dataTable.addColumn({ type: 'string', role: 'tooltip', p: { html: true } });
+        dataTable.addColumn({ type: 'string', role: 'style' }); // Cột màu
+
+        sortedData.forEach(item => {
+            var tooltipHtml = `
+            <div class="p-2 text-xs font-sans" style="min-width: 120px">
+                <strong class="text-sm block mb-1 border-b pb-1 text-gray-700">${item.Name}</strong>
+                <div class="flex justify-between items-center gap-3 mt-1">
+                    <span><span style="color:#198754; font-size:14px">●</span> Passed:</span>
+                    <span class="font-bold text-gray-900">${item.Value.toLocaleString()}</span>
+                </div>
+            </div>`;
+
+            dataTable.addRow([
+                item.Name,
+                item.Value,
+                tooltipHtml,
+                'color: #198754; stroke-width: 0' // Set cứng màu xanh
+            ]);
+        });
+
+        var myBarWidth = sortedData.length < 5 ? 50 : '75%';
+
+        var options = {
+            fontName: 'Arial', fontSize: 11,
+            backgroundColor: 'transparent',
+            chartArea: { left: 60, top: 30, right: 20, bottom: 50, width: '100%', height: '70%' },
+            vAxis: {
+                gridlines: { count: 5, color: '#f3f4f6' },
+                minValue: 0,
+                format: 'short'
+            },
+            hAxis: {
+                slantedText: true, slantedTextAngle: 45, textStyle: { fontSize: 10 }
+            },
+            bar: { groupWidth: myBarWidth },
+            legend: { position: 'none' },
+            tooltip: { isHtml: true }
+        };
+
+        var chart = new google.visualization.ColumnChart(document.getElementById(elementId));
+        chart.draw(dataTable, options);
+    }
+
+    // --- HÀM 2: VẼ BIỂU ĐỒ DEFECT PARETO (GIỮ NGUYÊN LOGIC CŨ ĐANG CHẠY TỐT) ---
+    function drawDefectPareto(data) {
+        var elementId = 'defect_chart';
+        if (!data || data.length === 0) {
+             document.getElementById(elementId).innerHTML = '<div class="flex items-center justify-center h-full text-gray-400">No Data</div>';
+             return;
+        }
+
+        // Chuẩn hóa dữ liệu cho biểu đồ Defect luôn cho chắc
+        let chartData = data.map(item => ({
+            Name: item.SupplierName || item.supplierName,
+            Value: item.SumDefects !== undefined ? item.SumDefects : (item.sumDefects || 0)
+        }));
+
+        let sortedData = chartData.sort((a, b) => b.Value - a.Value).filter(x => x.Value > 0);
+
+        if (sortedData.length === 0) {
+             document.getElementById(elementId).innerHTML = '<div class="flex items-center justify-center h-full text-gray-400">Data is 0</div>';
+             return;
+        }
+        document.getElementById(elementId).style.width = '100%';
+
+        let totalValue = sortedData.reduce((sum, item) => sum + item.Value, 0);
         let runningTotal = 0;
 
         var dataTable = new google.visualization.DataTable();
         dataTable.addColumn('string', 'Supplier');
-        dataTable.addColumn('number', yLabel);
-        dataTable.addColumn({ type: 'string', role: 'style' }); // Màu cột
-        dataTable.addColumn({ type: 'number', role: 'annotation' }); // Số trên đầu cột
-        dataTable.addColumn('number', 'Pareto %'); // Đường line
+        dataTable.addColumn('number', 'Defects');
+        dataTable.addColumn({ type: 'string', role: 'style' });
+        dataTable.addColumn({ type: 'number', role: 'annotation' });
+        dataTable.addColumn('number', 'Pareto %');
         dataTable.addColumn({ type: 'string', role: 'tooltip' });
 
-        // Màu sắc: Lấy theo tông xanh #198754 của giao diện tham khảo
-        const colorMain = '#198754';  // Xanh lá đậm (giống header)
-        const colorFade = '#e2e8f0';  // Xám/Be nhạt (cho phần đuôi) - dùng slate-200 cho hợp tông
-        const colorLine = '#064e3b';  // Xanh rất đậm cho đường Line
+        const colorMain = '#198754'; const colorFade = '#d1d5db'; const colorLine = '#064e3b';
 
         sortedData.forEach(item => {
-            let val = item[valueKey];
+            let val = item.Value;
             runningTotal += val;
             let cumulativePercent = totalValue === 0 ? 0 : (runningTotal / totalValue);
 
-            // Logic màu: Top 80% màu Xanh, còn lại màu Nhạt
+            // Logic màu Pareto (Xanh đậm / Xám nhạt)
             let barColor = (cumulativePercent <= 0.85) ? colorMain : colorFade;
-            // Nếu giá trị quá bé so với max (< 15%), cho màu nhạt luôn cho đẹp
-            if (val < sortedData[0][valueKey] * 0.15) barColor = colorFade;
+            if (val < sortedData[0].Value * 0.15) barColor = colorFade;
 
-            let tooltip = `${item[nameKey]}\n${yLabel}: ${val}\nPareto: ${(cumulativePercent * 100).toFixed(1)}%`;
+            let tooltip = `${item.Name}\nDefects: ${val.toLocaleString()}\nPareto: ${(cumulativePercent * 100).toFixed(1)}%`;
 
             dataTable.addRow([
-                item[nameKey],
+                item.Name,
                 val,
                 `color: ${barColor}; stroke-width: 0`,
                 val,
@@ -244,50 +307,21 @@
             ]);
         });
 
-        // B4: Options (Tinh chỉnh cho gọn gàng trong khung nhỏ)
+        var myBarWidth = sortedData.length < 5 ? 50 : '75%';
+
         var options = {
-            fontName: 'Arial', // Font mặc định hệ thống
-            fontSize: 10,      // Font bé để vừa khung
-            backgroundColor: 'transparent',
-            chartArea: { left: 40, top: 20, right: 40, bottom: 60, width: '100%', height: '70%' },
-
+            fontName: 'Arial', fontSize: 11, backgroundColor: 'transparent',
+            chartArea: { left: 50, top: 30, right: 50, bottom: 50, width: '100%', height: '70%' },
             seriesType: 'bars',
-            series: {
-                1: {
-                    type: 'line',
-                    targetAxisIndex: 1,
-                    color: colorLine,
-                    lineWidth: 2,
-                    pointSize: 3
-                }
-            },
-
+            series: { 1: { type: 'line', targetAxisIndex: 1, color: colorLine, lineWidth: 2, pointSize: 4 } },
             vAxes: {
-                0: {
-                    gridlines: { count: 4, color: '#f1f5f9' },
-                    textStyle: { color: '#64748b' },
-                    minValue: 0
-                },
-                1: {
-                    format: '#%',
-                    gridlines: { color: 'transparent' },
-                    textStyle: { color: '#64748b' },
-                    minValue: 0, maxValue: 1.1
-                }
+                0: { gridlines: { count: 5, color: '#f3f4f6' }, minValue: 0 },
+                1: { format: '#%', gridlines: { color: 'transparent' }, minValue: 0, maxValue: 1.1 }
             },
-
-            hAxis: {
-                slantedText: true,
-                slantedTextAngle: 45,
-                textStyle: { fontSize: 9, color: '#334155' }
-            },
-
-            bar: { groupWidth: '80%' },
+            hAxis: { slantedText: true, textStyle: { fontSize: 10 } },
+            bar: { groupWidth: myBarWidth },
             legend: { position: 'none' },
-            annotations: {
-                alwaysOutside: true,
-                textStyle: { fontSize: 9, bold: true, color: '#333' }
-            }
+            tooltip: { isHtml: true }
         };
 
         var chart = new google.visualization.ComboChart(document.getElementById(elementId));
