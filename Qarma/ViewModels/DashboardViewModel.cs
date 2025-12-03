@@ -22,7 +22,6 @@ namespace Qarma.ViewModels
         public int ReInspections { get; set; }
         public int Orders { get; set; }
         public int Items { get; set; }
-        public int SampleQuantity { get; set; }
     }
 
     public class MonthlyInspection

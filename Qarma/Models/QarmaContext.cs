@@ -8,7 +8,7 @@ namespace Qarma.Models
 {
 	public class QarmaContext : DbContext
 	{
-		public QarmaContext() : base("name=QarmaContext")
+		public QarmaContext() : base("name=PMS_PHUONGDONG")
 		{
 		}
 	}
