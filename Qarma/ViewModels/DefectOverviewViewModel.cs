@@ -22,23 +22,26 @@ namespace Qarma.ViewModels
 
     public class DefectTrendItem
     {
-        public string MonthYear { get; set; } // Ví dụ: "Jan-23"
-        public int Critical { get; set; }
+		public string ThangHienThi { get; set; }
+		public int Thang { get; set; }
+		public int Nam { get; set; }
+		public int Critical { get; set; }
         public int Major { get; set; }
         public int Minor { get; set; }
     }
 
     public class DefectCategoryItem
     {
-        public string Name { get; set; }      // Ví dụ: "Fabric", "Packing"
-        public int Count { get; set; }
-        public double Percentage { get; set; } // Tính sẵn từ server cho chuẩn
+        public string TenLoiHienThi { get; set; }      // Ví dụ: "Fabric", "Packing"
+        public int TongSoLoi { get; set; }
+        public double PhanTram { get; set; } // Tính sẵn từ server cho chuẩn
     }
 
     public class ParetoItem
     {
-        public string DefectName { get; set; } // Ví dụ: "Incorrect Size Boxes"
-        public int Count { get; set; }
-        public double CumulativePercentage { get; set; } // % Tích lũy (Đường line)
-    }
+        public string TenLoi { get; set; } // Ví dụ: "Incorrect Size Boxes"
+        public int SoLuongLoi { get; set; }
+        public double PhanTram { get; set; } // % Tích lũy (Đường line)
+		public double PhanTramTichLuy { get; set; }
+	}
 }
