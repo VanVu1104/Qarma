@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="15.0" DefaultTargets="Build"
+  xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\EntityFramework.6.5.1\build\EntityFramework.props" Condition="Exists('..\packages\EntityFramework.6.5.1\build\EntityFramework.props')" />
   <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -175,8 +176,16 @@
     <Compile Include="Models\ProductPerformanceModels.cs" />
     <Compile Include="Models\InspectorMetric.cs" />
     <Compile Include="Models\ProductMetric.cs" />
+    <Compile Include="Models\ProductPerformance\BaoCaoChatLuongHangHoa.cs" />
+    <Compile Include="Models\ProductPerformance\BaoCaoChatLuongHangHoaTheoThang.cs" />
+    <Compile Include="Models\ProductPerformance\BaoCaoLoiChiTietHangHoa.cs" />
+    <Compile Include="Models\ProductPerformance\HangHoa.cs" />
     <Compile Include="Models\QarmaContext.cs" />
     <Compile Include="Models\SupplierModels.cs" />
+    <Compile Include="Models\SupplierPerformance\BaoCaoChatLuong.cs" />
+    <Compile Include="Models\SupplierPerformance\BaoCaoChatLuongTheoThang.cs" />
+    <Compile Include="Models\SupplierPerformance\BaoCaoLoiChiTiet.cs" />
+    <Compile Include="Models\SupplierPerformance\KhackHang.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\ProductService.cs" />
     <Compile Include="Services\SupplierService.cs" />
@@ -201,6 +210,7 @@
     <Content Include="Content\bootstrap.min.css" />
     <Content Include="Content\bootstrap.rtl.css" />
     <Content Include="Content\bootstrap.rtl.min.css" />
+    <Content Include="Content\Performance\performance_share.css" />
     <Content Include="favicon.ico" />
     <Content Include="Global.asax" />
     <Content Include="Content\Site.css" />
@@ -221,6 +231,8 @@
     <Content Include="Scripts\jquery.validate.unobtrusive.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.min.js" />
     <Content Include="Scripts\modernizr-2.8.3.js" />
+    <Content Include="Scripts\Performance\product_performance.js" />
+    <Content Include="Scripts\Performance\supplier_performance.js" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>

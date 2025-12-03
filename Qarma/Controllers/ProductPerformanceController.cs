@@ -20,7 +20,50 @@ namespace Qarma.Controllers
         // GET: ProductPerformance
         public ActionResult Index()
         {
+            var dataHangHoa = _productService.GetDanhSachProduct();
+            ViewBag.DsHangHoa = new SelectList(dataHangHoa, "MaHang", "MaHang");
+
             return View();
+        }
+
+        [HttpGet]
+        public JsonResult GetReportData(string maHang)
+        {
+            DateTime ngayKiem = new DateTime(2025, 12, 01);
+
+            var data = _productService.GetBaoCaoChatLuongHangHoa(ngayKiem, maHang);
+
+            return Json(data, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult GetParetoData(string maHang)
+        {
+            DateTime ngayKiem = new DateTime(2025, 12, 01);
+
+            if(string.IsNullOrEmpty(maHang))
+            {
+                return Json(new List<object>(), JsonRequestBehavior.AllowGet);
+            }
+
+            var data = _productService.GetBaoCaoChatLuongChiTietHangHoa(ngayKiem, maHang);
+
+            return Json(data, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult GetReportByMonths(string maHang)
+        {
+            string year = "2025";
+
+            if(string.IsNullOrEmpty(maHang))
+            {
+                return Json(new List<object>(), JsonRequestBehavior.AllowGet);
+            }
+
+            var data = _productService.GetBaoCaoChatLuongHangHoaTheoThangs(year, maHang);
+
+            return Json(data, JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]
