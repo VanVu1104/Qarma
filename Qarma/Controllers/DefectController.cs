@@ -1,74 +1,110 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web.Mvc;
+﻿using Qarma.Models;
 using Qarma.ViewModels;
-
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.Entity;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
 namespace Qarma.Controllers
 {
     public class DefectController : Controller
     {
-        public ActionResult Index()
-        {
-            var model = new DefectOverviewViewModel
-            {
-                FromDate = "01/01/2023",
-                ToDate = "26/09/2024",
+		private QarmaContext db = new QarmaContext();
 
-                // 1. DỮ LIỆU CHART STACKED (Giả lập theo ảnh)
-                DefectTrends = new List<DefectTrendItem>
-                {
-                    new DefectTrendItem { MonthYear = "Jan-23", Critical = 0, Major = 7, Minor = 0 },
-                    new DefectTrendItem { MonthYear = "Feb-23", Critical = 4, Major = 4, Minor = 3 },
-                    new DefectTrendItem { MonthYear = "Mar-23", Critical = 0, Major = 19, Minor = 11 },
-                    // ... Thêm các tháng khác nếu cần ...
-                    new DefectTrendItem { MonthYear = "Jan-24", Critical = 4, Major = 3, Minor = 1 },
-                    new DefectTrendItem { MonthYear = "Feb-24", Critical = 0, Major = 2, Minor = 2 },
-                    new DefectTrendItem { MonthYear = "Mar-24", Critical = 0, Major = 9, Minor = 29 }, // Cột cao nhất
-                    new DefectTrendItem { MonthYear = "Apr-24", Critical = 0, Major = 21, Minor = 17 },
-                },
+		public ActionResult Index(DateTime? start, DateTime? end)
+		{
+			// --- 1. Xử lý ngày tháng (Giữ nguyên) ---
+			DateTime fromDate = start ?? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+			DateTime toDateRaw = end ?? DateTime.Now;
+			DateTime toDate = new DateTime(toDateRaw.Year, toDateRaw.Month, toDateRaw.Day, 23, 59, 59);
 
-                // 2. DỮ LIỆU CHART TRÒN (Giả lập theo ảnh)
-                DefectCategories = new List<DefectCategoryItem>
-                {
-                    new DefectCategoryItem { Name = "Packing & Package", Count = 160 },
-                    new DefectCategoryItem { Name = "Fabric", Count = 75 },
-                    new DefectCategoryItem { Name = "Accessories", Count = 31 },
-                    new DefectCategoryItem { Name = "Sewing & Appearance", Count = 19 },
-                    new DefectCategoryItem { Name = "Finishing", Count = 14 }
-                }
-            };
+			ViewBag.StartDate = fromDate.ToString("yyyy-MM-dd");
+			ViewBag.EndDate = (end ?? toDate).ToString("yyyy-MM-dd");
 
-            // 3. XỬ LÝ DỮ LIỆU PARETO (Tự động tính toán)
-            // Giả lập dữ liệu thô từ SQL
-            var rawParetoData = new List<ParetoItem>
-            {
-                new ParetoItem { DefectName = "Incorrect Size Boxes", Count = 42 },
-                new ParetoItem { DefectName = "Carton defects / over / under", Count = 38 },
-                new ParetoItem { DefectName = "Missing / extra quantity", Count = 32 },
-                new ParetoItem { DefectName = "Hole", Count = 29 },
-                new ParetoItem { DefectName = "Wrong / missing hangtag", Count = 25 },
-                new ParetoItem { DefectName = "Stud / poppers / buttons", Count = 12 },
-                new ParetoItem { DefectName = "Pick Missing", Count = 11 },
-                new ParetoItem { DefectName = "Others", Count = 11 },
-                new ParetoItem { DefectName = "Wrong polybag size", Count = 10 },
-                new ParetoItem { DefectName = "Stain / dirt", Count = 10 }
-            };
+			// --- 2. Khởi tạo Model Rỗng ---
+			var model = new DefectOverviewViewModel
+			{
+				FromDate = fromDate.ToString("dd/MM/yyyy"),
+				ToDate = toDate.ToString("dd/MM/yyyy"),
+				ParetoData = new List<ViewModels.ParetoItem>(),
+				DefectTrends = new List<ViewModels.DefectTrendItem>(),
+				DefectCategories = new List<ViewModels.DefectCategoryItem>()
+			};
 
-            // Logic tính % Tích lũy (Cumulative Percentage)
-            // Sau này có SQL thật bạn vẫn giữ nguyên đoạn logic này
-            double totalDefects = rawParetoData.Sum(x => x.Count);
-            double runningTotal = 0;
+			// --- 3. GỌI DATABASE (1 Lần Duy Nhất - 1 Proc Duy Nhất) ---
+			var connection = db.Database.Connection;
+			try
+			{
+				if (connection.State != ConnectionState.Open) connection.Open();
 
-            foreach (var item in rawParetoData)
-            {
-                runningTotal += item.Count;
-                item.CumulativePercentage = Math.Round((runningTotal / totalDefects) * 100, 1);
-            }
+				using (var cmd = connection.CreateCommand())
+				{
+					// Tên Proc gộp bạn đã viết
+					cmd.CommandText = "sp_GetDefectDashboard";
+					cmd.CommandType = CommandType.StoredProcedure;
 
-            model.ParetoData = rawParetoData;
+					// Truyền tham số
+					cmd.Parameters.Add(new SqlParameter("@FromDate", fromDate));
+					cmd.Parameters.Add(new SqlParameter("@ToDate", toDate));
 
-            return View(model);
-        }
-    }
+					using (var reader = cmd.ExecuteReader())
+					{
+						// --- ĐỌC BẢNG 1: PARETO ---
+						while (reader.Read())
+						{
+							model.ParetoData.Add(new ViewModels.ParetoItem
+							{
+								TenLoi = reader["TenLoi"].ToString(),
+								SoLuongLoi = Convert.ToInt32(reader["SoLuongLoi"]),
+								// Xử lý null an toàn
+								PhanTram = reader["PhanTram"] != DBNull.Value ? Convert.ToDouble(reader["PhanTram"]) : 0,
+								PhanTramTichLuy = reader["PhanTramTichLuy"] != DBNull.Value ? Convert.ToDouble(reader["PhanTramTichLuy"]) : 0
+							});
+						}
+
+						// --- ĐỌC BẢNG 2: CỘT CHỒNG (Nhảy sang bảng tiếp theo) ---
+						if (reader.NextResult())
+						{
+							while (reader.Read())
+							{
+								model.DefectTrends.Add(new ViewModels.DefectTrendItem
+								{
+									ThangHienThi = reader["ThangHienThi"].ToString(),
+									Thang = Convert.ToInt32(reader["Thang"]),
+									Nam = Convert.ToInt32(reader["Nam"]),
+									Critical = reader["Critical"] != DBNull.Value ? Convert.ToInt32(reader["Critical"]) : 0,
+									Major = reader["Major"] != DBNull.Value ? Convert.ToInt32(reader["Major"]) : 0,
+									Minor = reader["Minor"] != DBNull.Value ? Convert.ToInt32(reader["Minor"]) : 0
+								});
+							}
+						}
+
+						// --- ĐỌC BẢNG 3: TRÒN (Nhảy sang bảng cuối) ---
+						if (reader.NextResult())
+						{
+							while (reader.Read())
+							{
+								model.DefectCategories.Add(new ViewModels.DefectCategoryItem
+								{
+									TenLoiHienThi = reader["TenLoiHienThi"].ToString(),
+									TongSoLoi = Convert.ToInt32(reader["TongSoLoi"]),
+									PhanTram = reader["PhanTram"] != DBNull.Value ? Convert.ToDouble(reader["PhanTram"]) : 0
+								});
+							}
+						}
+					}
+				}
+			}
+			finally
+			{
+				if (connection.State == ConnectionState.Open) connection.Close();
+			}
+
+			// --- 4. TRẢ VỀ VIEW ---
+			return View(model);
+		}
+	}
 }
