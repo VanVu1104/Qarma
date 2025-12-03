@@ -8,7 +8,7 @@
 }
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-
+<link rel="stylesheet" href="~/Content/Performance/performance_share.css"/>
 <style>
     text {
         font-family: 'Inter', sans-serif !important;
@@ -40,6 +40,7 @@
     .hidden {
         display: none;
     }
+    
 </style>
 
 <div class="space-y-6 pb-10 font-sans text-gray-700">
@@ -47,10 +48,14 @@
         <div>
             <h1 class="text-3xl font-extrabold text-[#1a5c85]">Supplier performance</h1>
             <div class="flex items-center mt-3 text-gray-800">
-                <button class="mr-3 text-gray-500 hover:text-gray-700 transition">
-                    <i class="fa-solid fa-circle-arrow-left text-3xl"></i>
-                </button>
-                <span id="product-name" class="text-2xl font-semibold">Loading...</span>
+                @Html.DropDownList("SelectedCustomer",
+                    (IEnumerable<SelectListItem>)ViewBag.DsKhachHang,
+                    "--- Chọn khách hàng ---",
+                    new
+                    {
+                        @id = "customer-select",
+                        @class = "form-select block w-auto pl-3 pr-8 py-1.5 text-base font-semibold text-[#1a5c85] bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a5c85] focus:border-transparent cursor-pointer transition ease-in-out duration-150"
+                    })
             </div>
         </div>
     </div>
@@ -105,7 +110,7 @@
                 <span id="chart-dist-title">Inspection Distribution</span>
             </div>
             <div class="flex-grow p-4 relative">
-                <div id="chart_distribution" class="w-full h-full" style="min-height: 280px;"></div>
+                <div id="chart_distribution" class="w-full h-full" style="min-height: 280px; display: flex; justify-content: center; align-items: center; height: 100%; color: #9ca3af; font-size: 12px;"></div>
             </div>
         </div>
 
@@ -114,7 +119,7 @@
                 <span id="map-title">Inspection Map - Loading...</span>
             </div>
             <div class="flex-grow relative bg-[#c8dce0]">
-                <div id="chart_map" class="w-full h-full z-0" style="min-height: 300px;"></div>
+                <div id="chart_map" class="w-full h-full z-0 " style="min-height: 300px; display: flex; justify-content: center; align-items: center; height: 100%; color: #9ca3af; font-size: 12px;"></div>
                 <div class="absolute bottom-0 right-0 px-1 bg-white/70 text-[10px] text-gray-500 z-10 pointer-events-none">
                     <span>© OpenStreetMap</span>
                 </div>
@@ -129,7 +134,7 @@
                 Defect Severity Distribution
             </div>
             <div class="flex-grow p-1">
-                <div id="chart_severity" class="w-full h-full"></div>
+                <div id="chart_severity" class="w-full h-full" style="display: flex; justify-content: center; align-items: center; height: 100%; color: #9ca3af; font-size: 12px;"></div>
             </div>
         </div>
 
@@ -139,7 +144,7 @@
                 Defects Category
             </div>
             <div class="flex-grow p-1 relative-container">
-                <div id="chart_category" class="w-full h-full"></div>
+                <div id="chart_category" class="w-full h-full" style="display: flex; justify-content: center; align-items: center; height: 100%; color: #9ca3af; font-size: 12px;"></div>
             </div>
         </div>
 
@@ -149,7 +154,7 @@
                 Defect Type Pareto
             </div>
             <div class="flex-grow p-1 relative">
-                <div id="chart_pareto" class="w-full h-full"></div>
+                <div id="chart_pareto" class="w-full h-full" style="display: flex; justify-content: center; align-items: center; height: 100%; color: #9ca3af; font-size: 12px;"></div>
             </div>
         </div>
     </div>
@@ -158,332 +163,6 @@
 @section scripts {
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
-    <script type="text/javascript">
-        // Khai báo biến toàn cục để chứa dữ liệu sau khi tải xong
-        let apiData = null;
-
-        google.charts.load('current', { 'packages': ['corechart', 'bar', 'geochart'] });
-        google.charts.setOnLoadCallback(fetchDataAndInit);
-
-        // --- HÀM MỚI: GỌI AJAX VỀ SERVER ---
-        function fetchDataAndInit() {
-            // Hiển thị loading (nếu cần)
-            document.getElementById('product-name').innerText = "Fetching data...";
-
-            // Gọi về Action GetDashboardData trong Controller
-            fetch('/SupplierPerformance/GetDashboardData')
-                .then(response => {
-                    if (!response.ok) throw new Error("Network response was not ok");
-                    return response.json();
-                })
-                .then(data => {
-                    console.log("Data loaded via AJAX:", data);
-                    apiData = data; // Gán dữ liệu vào biến
-                    initDashboard(); // Vẽ biểu đồ
-                })
-                .catch(error => {
-                    console.error('Error fetching data:', error);
-                    document.getElementById('product-name').innerText = "Error loading data";
-                });
-        }
-
-        function initDashboard() {
-            if (!apiData) return;
-
-            renderKpis();
-            drawDistribution();
-            drawLeafletMap();
-            drawSeverity();
-            drawCategory();
-            drawPareto();
-        }
-
-        // --- MAP: LEAFLET (WORLD VIEW) ---
-        function drawLeafletMap() {
-            if (typeof L === 'undefined') { return; }
-            var container = L.DomUtil.get('chart_map');
-            if (container != null) { container._leaflet_id = null; }
-
-            // Zoom out để thấy toàn thế giới (SetView: [20, 0], Zoom: 2)
-            var map = L.map('chart_map').setView([20, 0], 1);
-
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap &copy; CARTO',
-                subdomains: 'abcd',
-                maxZoom: 19
-            }).addTo(map);
-
-            // Marker màu xanh lá
-            var greenIcon = new L.Icon({
-                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
-            });
-
-            apiData.mapLocations.forEach(loc => {
-                var marker = L.marker([loc.lat, loc.long], { icon: greenIcon }).addTo(map);
-                marker.bindPopup(`<div style="text-align:center; color:#1f7a4d;"><b>${loc.name}</b><br>Rate: 90%</div>`);
-            });
-            setTimeout(() => { map.invalidateSize(); }, 200);
-        }
-
-        // --- KPI RENDER ---
-        function renderKpis() {
-            document.getElementById('product-name').innerText = apiData.productInfo.name;
-            let totalCount = apiData.productInfo.totalInspections;
-            document.getElementById('chart-dist-title').innerText = `Inspection Distribution - Total Inspections ${totalCount}`;
-            document.getElementById('map-title').innerText = `Inspection Map - Location rate ${apiData.productInfo.locationRate}`;
-
-            const kpi = apiData.kpis;
-            const updateGauge = (targetId, fillId, valId, dataObj) => {
-                document.getElementById(targetId).innerText = `${dataObj.target} %`;
-                if (dataObj.current === null) {
-                    document.getElementById(valId).innerText = "(Blank)";
-                } else {
-                    document.getElementById(valId).innerText = `${dataObj.current.toFixed(1)} %`;
-                    let percent = dataObj.current > 100 ? 100 : dataObj.current;
-                    setTimeout(() => { document.getElementById(fillId).style.transform = `rotate(${-180 + (percent * 1.8)}deg)`; }, 100);
-                }
-            };
-            updateGauge('kpi-rej-target', 'kpi-rej-fill', 'kpi-rej-val', kpi.rejection);
-            updateGauge('kpi-reins-target', 'kpi-reins-fill', 'kpi-reins-val', kpi.reinspection);
-            updateGauge('kpi-def-target', 'kpi-def-fill', 'kpi-def-val', kpi.defect);
-            updateGauge('kpi-meas-target', 'kpi-meas-fill', 'kpi-meas-val', kpi.measurement);
-        }
-
-        // --- DISTRIBUTION ---
-        function drawDistribution() {
-            var dataArray = [['Month', 'Inspections', 'Defect rate', { role: 'annotation' }]];
-            apiData.distribution.forEach(item => {
-                let anno = (item.rate !== null) ? '   ' + (item.rate * 100).toFixed(2) + ' %   ' : null;
-                dataArray.push([item.month, item.count, item.rate, anno]);
-            });
-            var data = google.visualization.arrayToDataTable(dataArray);
-            var options = {
-                seriesType: 'bars',
-                series: {
-                    0: { color: '#1f7a4d' },
-                    1: { type: 'line', targetAxisIndex: 1, color: '#374151', pointSize: 5, lineWidth: 1 }
-                },
-                vAxes: {
-                    0: { title: 'Inspections', textStyle: { color: '#666', fontSize: 10 }, gridlines: { color: '#f3f4f6', count: 5 } },
-                    1: { title: 'Defect rate', textStyle: { color: '#666', fontSize: 10 }, format: '#.##%', gridlines: { color: 'transparent' } }
-                },
-                hAxis: {
-                    title: 'Month', textStyle: { color: '#666', fontSize: 10 }, gridlines: { color: 'transparent' }
-                },
-                legend: { position: 'top', alignment: 'start', textStyle: { fontSize: 11 } },
-                annotations: { stem: { color: 'transparent' }, textStyle: { color: '#333', fontSize: 10 }, boxStyle: { stroke: '#ccc', rx: 5, ry: 5, fill: '#f9fafb' } },
-                bar: { groupWidth: "60%" },
-                chartArea: { left: 40, right: 40, top: 40, bottom: 60, width: '100%', height: '100%' },
-                backgroundColor: 'transparent'
-            };
-            new google.visualization.ComboChart(document.getElementById('chart_distribution')).draw(data, options);
-        }
-
-        // --- SEVERITY (Yellow & Blue) ---
-        function drawSeverity() {
-            var dataArray = [['Severity', 'Count', { role: 'style' }, { role: 'annotation' }]];
-            let maxVal = 0;
-            apiData.severity.forEach(item => {
-                if (item.count > maxVal) maxVal = item.count;
-                dataArray.push([item.type, item.count, `color: ${item.color}; stroke-width: 0;`, item.count.toString()]);
-            });
-            if (maxVal === 0) maxVal = 5;
-            var data = google.visualization.arrayToDataTable(dataArray);
-            var view = new google.visualization.DataView(data);
-            view.setColumns([0, 1, 2, 3, { type: 'string', role: 'annotationTextStyle', calc: function (dt, row) { return (dt.getValue(row, 1) === 0) ? 'color: #6b7280; font-weight: bold;' : 'color: #ffffff; font-weight: bold;'; } }]);
-
-            var options = {
-                bars: 'horizontal', legend: 'none', backgroundColor: 'transparent',
-                chartArea: { left: 85, top: 15, right: 15, bottom: 45, height: '100%', width: '100%' },
-                hAxis: { title: 'Defects sum', textStyle: { color: '#666', fontSize: 11 }, gridlines: { color: '#d1d5db', style: 'dotted' }, ticks: [0, 20, 40], viewWindow: { max: maxVal * 1.15 } },
-                vAxis: { title: 'Defect severity', textStyle: { color: '#666', fontSize: 11 }, gridlines: { color: 'transparent' } },
-                bar: { groupWidth: "70%" },
-                annotations: { alwaysOutside: false, textStyle: { fontSize: 11 } }
-            };
-            new google.visualization.BarChart(document.getElementById('chart_severity')).draw(view, options);
-        }
-
-        // --- CATEGORY (Multi Colors) ---
-        function drawCategory() {
-            // 1. CHUẨN BỊ DỮ LIỆU
-            var dataArray = [['Category', 'Count']];
-            let totalCount = 0;
-            apiData.categories.forEach(item => totalCount += item.count);
-
-            // Sắp xếp giảm dần để các miếng lớn nằm trên, miếng nhỏ nằm dưới (giống hình mẫu)
-            apiData.categories.sort((a, b) => b.count - a.count);
-
-            let colorsArray = [];
-            apiData.categories.forEach(item => {
-                // Dữ liệu chuẩn: Cột 0 là Tên (cho Legend), Cột 1 là Giá trị (để tính toán và vẽ)
-                dataArray.push([item.name, item.count]);
-                colorsArray.push(item.color);
-            });
-
-            var data = google.visualization.arrayToDataTable(dataArray);
-
-            // 2. CẤU HÌNH OPTIONS ĐỂ GIỐNG HÌNH MẪU
-            var options = {
-                pieHole: 0, // Biểu đồ tròn đặc (Pie Chart)
-                colors: colorsArray, // Mảng màu đã sắp xếp tương ứng với dữ liệu
-
-                // Cấu hình Legend (Chú giải) nằm bên phải
-                legend: {
-                    position: 'right',
-                    alignment: 'center', // Canh giữa theo chiều dọc
-                    textStyle: {
-                        fontSize: 11,
-                        color: '#555', // Màu chữ xám trung bình
-                        fontName: 'Inter'
-                    },
-                    title: 'Defect Category', // Tiêu đề cho Legend
-                    titleTextStyle: {
-                        fontSize: 12,
-                        color: '#333', // Màu tiêu đề đậm hơn
-                        bold: true,
-                        fontName: 'Inter'
-                    }
-                },
-
-                // Cấu hình Text hiển thị trên các miếng bánh
-                // 'percentage' sẽ hiển thị số phần trăm. Google Charts sẽ tự động đẩy
-                // nhãn ra ngoài và tạo đường dẫn (leader line) cho các miếng bánh nhỏ.
-                pieSliceText: 'percentage',
-
-                // Style cho text trên miếng bánh
-                pieSliceTextStyle: {
-                    color: '#ffffff', // Chữ màu trắng để nổi bật trên nền màu
-                    fontSize: 11,
-                    fontName: 'Inter'
-                },
-
-                // Tinh chỉnh vùng vẽ (Chart Area) - QUAN TRỌNG
-                // Cần chừa đủ không gian bên phải cho Legend và xung quanh cho các nhãn bên ngoài.
-                chartArea: {
-                    left: 20,    // Khoảng cách từ mép trái container (padding)
-                    top: 20,     // Khoảng cách từ mép trên (padding)
-                    width: '80%', // Chiều rộng vùng vẽ (nhường khoảng 35% cho Legend bên phải)
-                    height: '85%' // Chiều cao vùng vẽ (nhường chỗ cho padding trên/dưới)
-                },
-
-                backgroundColor: 'transparent',
-
-                // Cấu hình Tooltip khi di chuột vào
-                tooltip: {
-                    textStyle: { fontSize: 11, fontName: 'Inter' },
-                    showColorCode: true, // Hiển thị chấm màu trong tooltip
-                    isHtml: true // Sử dụng HTML tooltip cho đẹp mắt
-                }
-            };
-
-            // 3. VẼ BIỂU ĐỒ
-            // Sử dụng PieChart chuẩn của Google, không cần overlay thủ công
-            new google.visualization.PieChart(document.getElementById('chart_category')).draw(data, options);
-        }
-
-        // --- PARETO (Many Columns) ---
-        function drawPareto() {
-            var dataArray = [[
-                'Type',
-                'Sum',
-                {
-                    role: 'annotation'
-                },
-                {
-                    role: 'style'
-                },
-                'Pareto %',
-                {
-                    role: 'annotation'
-                }
-            ]];
-            const mainColor = '#1f7a4d';
-            const lastColor = '#e5e7eb'; // Cột cuối màu xám nhạt
-
-            apiData.pareto.forEach(item => {
-                let color = `color: ${item.isLast ? lastColor : mainColor}; stroke-width: 0;`;
-                let percentAnnotation = (item.percent * 100).toFixed(1) + ' %';
-                dataArray.push([
-                    item.type,
-                    item.count,
-                    item.count.toString(),
-                    color,
-                    item.percent,
-                    percentAnnotation]);
-            });
-
-            var data = google.visualization.arrayToDataTable(dataArray);
-            var options = {
-                seriesType: 'bars', backgroundColor: 'transparent',
-                series: {
-                    0: { color: '#1f7a4d' },
-                    1: {
-                        type: 'line',
-                        targetAxisIndex: 1,
-                        color: '#374151',
-                        pointSize: 0,
-                        lineWidth: 2,
-                        annotations: {
-                            stem: {
-                                length: 10,
-                                color: 'transparent'
-                            }
-                        }
-                    }
-                },
-                vAxes: {
-                    0: {
-                        title: 'Sum defects',
-                        textStyle: { fontSize: 10, color: '#666' },
-                        gridlines: {
-                            color: '#d1d5db',
-                            style: 'dotted',
-                            count: 3
-                        },
-                        ticks: [0, 10, 20]
-                    },
-                    1: {
-                        title: 'Pareto %',
-                        textStyle: { fontSize: 10, color: '#666' },
-                        format: '#.0 %',
-                        gridlines: {
-                            color: '#d1d5db',
-                            style: 'dotted',
-                            count: 3
-                        },
-                        ticks: [0, 0.5, 1],
-                        baselineColor: 'transparent'
-                    }
-                },
-                hAxis: {
-                    title: 'Defect type',
-                    textStyle: { fontSize: 9, color: '#666' }, // Font nhỏ vì tên dài
-                    gridlines: { color: 'transparent' },
-                    baselineColor: '#d1d5db'
-                },
-                legend: { position: 'top', alignment: 'start', textStyle: { fontSize: 11 } },
-                annotations: {
-                    textStyle: { fontSize: 9, color: '#333', bold: true },
-                    boxStyle: {
-                        stroke: '#ccc',
-                        strokeWidth: 1,
-                        rx: 3,
-                        ry: 3,
-                        fill: 'rgba(255,255,255,0.8)'
-                    }
-                },
-                bar: { groupWidth: "70%" },
-                chartArea: {
-                    left: 40, right: 55,
-                    top: 30, bottom: 60,
-                    width: '95%', height: '100%'
-                }
-            };
-            new google.visualization.ComboChart(document.getElementById('chart_pareto')).draw(data, options);
-        }
-
-        window.addEventListener('resize', initDashboard);</script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="~/Scripts/Performance/supplier_performance.js"></script>
 }
