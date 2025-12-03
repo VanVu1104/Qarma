@@ -168,7 +168,15 @@
     <Compile Include="Models\ProductPerformanceModels.cs" />
     <Compile Include="Models\InspectorMetric.cs" />
     <Compile Include="Models\ProductMetric.cs" />
+    <Compile Include="Models\ProductPerformance\BaoCaoChatLuongHangHoa.cs" />
+    <Compile Include="Models\ProductPerformance\BaoCaoChatLuongHangHoaTheoThang.cs" />
+    <Compile Include="Models\ProductPerformance\BaoCaoLoiChiTietHangHoa.cs" />
+    <Compile Include="Models\ProductPerformance\HangHoa.cs" />
     <Compile Include="Models\SupplierModels.cs" />
+    <Compile Include="Models\SupplierPerformance\BaoCaoChatLuong.cs" />
+    <Compile Include="Models\SupplierPerformance\BaoCaoChatLuongTheoThang.cs" />
+    <Compile Include="Models\SupplierPerformance\BaoCaoLoiChiTiet.cs" />
+    <Compile Include="Models\SupplierPerformance\KhackHang.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\ProductService.cs" />
     <Compile Include="Services\SupplierService.cs" />
@@ -193,6 +201,7 @@
     <Content Include="Content\bootstrap.min.css" />
     <Content Include="Content\bootstrap.rtl.css" />
     <Content Include="Content\bootstrap.rtl.min.css" />
+    <Content Include="Content\Performance\performance_share.css" />
     <Content Include="favicon.ico" />
     <Content Include="Global.asax" />
     <Content Include="Content\Site.css" />
@@ -213,6 +222,8 @@
     <Content Include="Scripts\jquery.validate.unobtrusive.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.min.js" />
     <Content Include="Scripts\modernizr-2.8.3.js" />
+    <Content Include="Scripts\Performance\product_performance.js" />
+    <Content Include="Scripts\Performance\supplier_performance.js" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
