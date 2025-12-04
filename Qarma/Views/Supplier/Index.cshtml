@@ -66,8 +66,42 @@
             </div>
         </div>
 
-        <div class="flex flex-col gap-2">
-            <form method="get" action="@Url.Action("Index")" class="flex items-center gap-2 bg-white border border-gray-300 rounded-md px-2 py-1 shadow-sm">
+        <div class="flex flex-col">
+            <form method="get" action="@Url.Action("Index")" class="flex flex-col items-end justify-start w-full">
+                <div class="flex items-center space-x-2 w-full justify-start">
+
+                    <div class="relative">
+                        <span class="absolute left-2 top-1/2 transform -translate-y-1/2 text-[10px] text-gray-500 font-bold">Fr:</span>
+                        <input type="date" name="start" value="@ViewBag.StartDate"
+                               class="pl-6 pr-1 py-1 bg-white border border-gray-300 text-gray-700 text-[11px] rounded shadow-sm focus:outline-none focus:ring-1 focus:ring-[#198754] focus:border-[#198754] h-[28px]" />
+                    </div>
+
+                    <span class="text-gray-400 text-xs">-</span>
+
+                    <div class="relative">
+                        <span class="absolute left-2 top-1/2 transform -translate-y-1/2 text-[10px] text-gray-500 font-bold">To:</span>
+                        <input type="date" name="end" value="@ViewBag.EndDate" class="pl-6 pr-1 py-1 bg-white border border-gray-300 text-gray-700 text-[11px] rounded shadow-sm focus:outline-none focus:ring-1 focus:ring-[#198754] focus:border-[#198754] h-[28px]" />
+                    </div>
+
+                    <button type="submit"
+                            class="bg-[#198754] hover:bg-[#146c43] text-white p-1.5 rounded shadow-sm transition-colors h-[28px] w-[28px] flex items-center justify-center"
+                            title="Lọc dữ liệu">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                        </svg>
+                    </button>
+
+                    <a href="@Url.Action("Index")"
+                       class="bg-gray-200 hover:bg-gray-300 text-gray-600 p-1.5 rounded shadow-sm transition-colors h-[28px] w-[28px] flex items-center justify-center"
+                       title="Tháng hiện tại">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                        </svg>
+                    </a>
+
+                </div>
+            </form>
+            @*<form method="get" action="@Url.Action("Index")" class="flex items-center gap-2 px-2 py-1 shadow-sm">
 
                 <input type="date" name="start"
                        value="@ViewBag.StartDate"
@@ -84,7 +118,7 @@
                 <button type="submit" class="ml-2 bg-[#198754] text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-[#14532d] transition-colors shadow-sm flex items-center gap-1">
                     <i data-lucide="filter" width="10" height="10" class="me-1"></i>
                 </button>
-            </form>
+            </form>*@
 
             <div class="bg-white p-2 rounded shadow border-t-4 border-[#198754]">
                 <h3 class="font-bold text-xs bg-gray-200 p-1 mb-1 text-gray-700">Supplier - Defects (Pareto)</h3>
@@ -109,6 +143,7 @@
                         <th class="text-center w-24 bg-[#198754]">Major</th>
                         <th class="text-center w-24 bg-[#198754]">Critical</th>
                         <th class="text-center w-24 bg-[#198754]">Total<br>Defects</th>
+                        <th class="text-center w-24 bg-[#198754]">Total<br>Passed</th>
                         <th class="text-center w-24 bg-[#198754]">Defect<br>Rate (%)</th>
                     </tr>
                 </thead>
@@ -123,12 +158,12 @@
                             <td class="text-center">@item.Major</td>
                             <td class="text-center">@item.Critical</td>
                             <td class="text-center font-bold text-gray-900">@item.SumDefects</td>
-
+                            <td class="text-center font-bold text-gray-900">@item.SumPassed</td>
                             <td class="text-center">
                                 <div class="flex items-center justify-center space-x-1">
                                     @if (item.DefectRate > 5.0) // Ví dụ logic cảnh báo đỏ
                                     {<span class="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>}
-                                    <span>@item.DefectRate.ToString("0.00")</span>
+                                    <span>@item.DefectRate.ToString("P2")</span>
                                 </div>
                             </td>
                         </tr>
@@ -142,6 +177,7 @@
                             <td class="text-center bg-[#198754]">@Model.Sum(x => x.Major)</td>
                             <td class="text-center bg-[#198754]">@Model.Sum(x => x.Critical)</td>
                             <td class="text-center bg-[#198754]">@Model.Sum(x => x.SumDefects)</td>
+                            <td class="text-center bg-[#198754]">@Model.Sum(x => x.SumPassed)</td>
                             <td class="text-center bg-[#198754]"></td>
                         </tr>
                     }
