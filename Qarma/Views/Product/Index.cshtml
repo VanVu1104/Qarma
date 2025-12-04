@@ -114,6 +114,7 @@
                         <th class="text-center bg-[#198754]">Major</th>
                         <th class="text-center bg-[#198754]">Critical</th>
                         <th class="text-center bg-[#198754]">Defect<br>Sum</th>
+                        <th class="text-center bg-[#198754]">Inspect<br>Sum</th>
                         <th class="text-center bg-[#198754]">Defect<br>Rate</th>
 
                     </tr>
@@ -131,6 +132,7 @@
                                 <td class="text-center align-middle">@item.Major</td>
                                 <td class="text-center align-middle">@item.Critical</td>
                                 <td class="text-center font-bold text-gray-900 align-middle">@item.DefectSum</td>
+                                <td class="text-center font-bold text-gray-900 align-middle">@item.InspectSum</td>
 
                                 <td class="text-center align-middle">
                                     <div class="flex items-center justify-center space-x-1">
@@ -149,8 +151,14 @@
                             <td class="text-center bg-[#198754]">@Model.Sum(x => x.Major)</td>
                             <td class="text-center bg-[#198754]">@Model.Sum(x => x.Critical)</td>
                             <td class="text-center bg-[#198754]">@Model.Sum(x => x.DefectSum)</td>
+                            <td class="text-center bg-[#198754]">@Model.Sum(x => x.InspectSum)</td>
                             <td class="text-center bg-[#198754]">
-                                @Math.Round(Model.Average(x => x.DefectRate), 2)%
+                                @{
+                                    var defectRate = (double)Model.Sum(x => x.DefectSum)
+                                                    / (Model.Sum(x => x.DefectSum) + Model.Sum(x => x.InspectSum))
+                                                    * 100;
+                                }
+                                @Math.Round(defectRate, 2)%
                             </td>
                         </tr>
                     }
@@ -181,41 +189,86 @@
             return;
         }
 
-        // Logic tự dãn chiều rộng nếu nhiều dữ liệu (>15 cột)
-        var minChartWidth = rawData.length > 15 ? (rawData.length * 35) + 'px' : '100%';
+        // Tính chiều rộng tối thiểu để hiển thị đầy đủ tên
+        var minChartWidth = rawData.length > 10 ? (rawData.length * 60) + 'px' : '100%';
 
         document.getElementById('inspection_chart').style.width = minChartWidth;
         document.getElementById('defect_chart').style.width = minChartWidth;
 
         var commonOptions = {
             legend: { position: "none" },
-            chartArea: { width: '90%', height: '75%', left: 30 },
+            chartArea: {
+                width: '85%',
+                height: '65%',
+                left: 40,
+                bottom: 60  // Tăng khoảng trống phía dưới cho trục X
+            },
             vAxis: {
-                gridlines: { count: 3 },
-                textStyle: { fontSize: 9 }
+                gridlines: { count: 4 },
+                textStyle: { fontSize: 10 }
             },
             hAxis: {
-                textStyle: { fontSize: 9, color: '#666' }
+                textStyle: {
+                    fontSize: 10,
+                    color: '#333',
+                    bold: true
+                },
+                slantedText: true,  // Xoay text để hiển thị đầy đủ
+                slantedTextAngle: 45,  // Góc xoay 45 độ
+                maxAlternation: 1
             },
-            bar: { groupWidth: "75%" }
+            bar: { groupWidth: "85%" },  // Tăng độ rộng cột
+            annotations: {
+                alwaysOutside: true,
+                textStyle: {
+                    fontSize: 11,
+                    bold: true,
+                    color: '#333',
+                    auraColor: 'none'
+                },
+                stem: {
+                    color: 'transparent',
+                    length: 5
+                }
+            },
+            tooltip: {
+                isHtml: false,
+                textStyle: { fontSize: 12 }
+            }
         };
 
         // Vẽ Chart 1 - Inspections
-        var inspectionData = [['Item', 'Inspections', { role: 'style' }]];
-        rawData.forEach(item => inspectionData.push([item.ItemNumber, item.InspectSum, '#198754']));
+        var inspectionData = [['Item', 'Inspections', { role: 'style' }, { role: 'annotation' }]];
+        rawData.forEach(item => {
+            inspectionData.push([
+                item.ItemNumber,
+                item.InspectSum,
+                '#198754',
+                item.InspectSum  // Hiển thị giá trị trên cột
+            ]);
+        });
 
         var options1 = JSON.parse(JSON.stringify(commonOptions));
-        options1.vAxis.title = '';
+        options1.vAxis.title = 'Inspections';
+        options1.vAxis.titleTextStyle = { fontSize: 11, bold: true, italic: false };
 
         var chart1 = new google.visualization.ColumnChart(document.getElementById('inspection_chart'));
         chart1.draw(google.visualization.arrayToDataTable(inspectionData), options1);
 
         // Vẽ Chart 2 - Defects
-        var defectData = [['Item', 'Sum Defects', { role: 'style' }]];
-        rawData.forEach(item => defectData.push([item.ItemNumber, item.DefectSum, '#198754']));
+        var defectData = [['Item', 'Defects', { role: 'style' }, { role: 'annotation' }]];
+        rawData.forEach(item => {
+            defectData.push([
+                item.ItemNumber,
+                item.DefectSum,
+                '#198754',
+                item.DefectSum  // Hiển thị giá trị trên cột
+            ]);
+        });
 
         var options2 = JSON.parse(JSON.stringify(commonOptions));
-        options2.vAxis.title = '';
+        options2.vAxis.title = 'Defects';
+        options2.vAxis.titleTextStyle = { fontSize: 11, bold: true, italic: false };
 
         var chart2 = new google.visualization.ColumnChart(document.getElementById('defect_chart'));
         chart2.draw(google.visualization.arrayToDataTable(defectData), options2);
