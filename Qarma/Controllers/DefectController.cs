@@ -14,7 +14,7 @@ namespace Qarma.Controllers
     {
 		private QarmaContext db = new QarmaContext();
 
-		public ActionResult Index(DateTime? start, DateTime? end)
+		public ActionResult Index(DateTime? start, DateTime? end, int top = 5)
 		{
 			// --- 1. Xử lý ngày tháng (Giữ nguyên) ---
 			DateTime fromDate = start ?? new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
@@ -23,6 +23,7 @@ namespace Qarma.Controllers
 
 			ViewBag.StartDate = fromDate.ToString("yyyy-MM-dd");
 			ViewBag.EndDate = (end ?? toDate).ToString("yyyy-MM-dd");
+			ViewBag.TopN = top;
 
 			// --- 2. Khởi tạo Model Rỗng ---
 			var model = new DefectOverviewViewModel
@@ -49,6 +50,7 @@ namespace Qarma.Controllers
 					// Truyền tham số
 					cmd.Parameters.Add(new SqlParameter("@FromDate", fromDate));
 					cmd.Parameters.Add(new SqlParameter("@ToDate", toDate));
+					cmd.Parameters.Add(new SqlParameter("@TopN", top));
 
 					using (var reader = cmd.ExecuteReader())
 					{
