@@ -32,7 +32,7 @@ namespace Qarma.Controllers
 				new SqlParameter("@ToDate", toDate)
 			};
 
-			var rawData = db.Database.SqlQuery<SupplierStatsViewModel>("EXEC sp_GetSupplierDefectPareto @FromDate, @ToDate", sqlParams).ToList();
+			var rawData = db.Database.SqlQuery<SupplierStatsViewModel>("EXEC sp_GetSupplierOverview @FromDate, @ToDate", sqlParams).ToList();
 
 			return View(rawData);
 		}
