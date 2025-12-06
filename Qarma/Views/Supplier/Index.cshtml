@@ -1,6 +1,5 @@
-﻿@model List<Qarma.ViewModels.SupplierStatsViewModel>
-@{ 
-    Layout = null;
+﻿﻿@model List<Qarma.ViewModels.SupplierStatsViewModel>
+@{
 }
 
 <script src="https://cdn.tailwindcss.com"></script>
@@ -23,9 +22,9 @@
         border-radius: 4px;
     }
 
-    .custom-scroll::-webkit-scrollbar-thumb:hover {
-        background: #a8a8a8;
-    }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
 
     /* Font bảng siêu nhỏ gọn */
     .table-compact th, .table-compact td {
@@ -66,7 +65,7 @@
             </div>
         </div>
 
-        <div class="flex flex-col">
+        <div class="flex flex-col gap-2">
             <form method="get" action="@Url.Action("Index")" class="flex flex-col items-end justify-start w-full">
                 <div class="flex items-center space-x-2 w-full justify-start">
 
@@ -103,22 +102,22 @@
             </form>
             @*<form method="get" action="@Url.Action("Index")" class="flex items-center gap-2 px-2 py-1 shadow-sm">
 
-                <input type="date" name="start"
-                       value="@ViewBag.StartDate"
-                       class="text-sm text-gray-700 border-none focus:ring-0 outline-none cursor-pointer bg-transparent"
-                       required />
+                    <input type="date" name="start"
+                           value="@ViewBag.StartDate"
+                           class="text-sm text-gray-700 border-none focus:ring-0 outline-none cursor-pointer bg-transparent"
+                           required />
 
-                <span class="text-gray-400 font-bold">-</span>
+                    <span class="text-gray-400 font-bold">-</span>
 
-                <input type="date" name="end"
-                       value="@ViewBag.EndDate"
-                       class="text-sm text-gray-700 border-none focus:ring-0 outline-none cursor-pointer bg-transparent"
-                       required />
+                    <input type="date" name="end"
+                           value="@ViewBag.EndDate"
+                           class="text-sm text-gray-700 border-none focus:ring-0 outline-none cursor-pointer bg-transparent"
+                           required />
 
-                <button type="submit" class="ml-2 bg-[#198754] text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-[#14532d] transition-colors shadow-sm flex items-center gap-1">
-                    <i data-lucide="filter" width="10" height="10" class="me-1"></i>
-                </button>
-            </form>*@
+                    <button type="submit" class="ml-2 bg-[#198754] text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-[#14532d] transition-colors shadow-sm flex items-center gap-1">
+                        <i data-lucide="filter" width="10" height="10" class="me-1"></i>
+                    </button>
+                </form>*@
 
             <div class="bg-white p-2 rounded shadow border-t-4 border-[#198754]">
                 <h3 class="font-bold text-xs bg-gray-200 p-1 mb-1 text-gray-700">Supplier - Defects (Pareto)</h3>
